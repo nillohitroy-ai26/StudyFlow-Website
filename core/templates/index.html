@@ -1,0 +1,2446 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyFlow - AI Study Companion</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <!-- Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- PDF JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: { 50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e', 950: '#082f49' },
+                        ocean: { DEFAULT: '#1e40af', dark: '#172554', light: '#3b82f6' },
+                        midnight: { 900: '#0f172a', 800: '#1e293b', 700: '#334155' }
+                    },
+                    backgroundImage: { 'focus-gradient': 'linear-gradient(135deg, #0ea5e9 0%, #22d3ee 100%)' },
+                    animation: { 'slide-in': 'slideIn 0.4s ease-out forwards', 'fade-in': 'fadeIn 0.3s ease-out forwards' },
+                    keyframes: { slideIn: { '0%': { transform: 'translateY(10px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }, fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } } }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #334155;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.8);
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .typing-cursor::after {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 16px;
+            margin-left: 4px;
+            background-color: #0ea5e9;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        body,
+        div,
+        nav,
+        button,
+        input {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .footer-link {
+            position: relative;
+        }
+
+        .footer-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background-color: #0ea5e9;
+            transition: width 0.3s;
+        }
+
+        .footer-link:hover::after {
+            width: 100%;
+        }
+
+        .file-row-leave {
+            opacity: 1;
+            transition: opacity 250ms ease;
+        }
+
+        .file-row-leave-active {
+            opacity: 0;
+        }
+
+        #pdf-canvas {
+            width: 200vh;
+            height: 200vh;
+            padding: 25px;
+            margin: 25px;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-primary-50 dark:bg-midnight-900 text-slate-800 dark:text-slate-200 h-screen flex flex-col overflow-hidden selection:bg-primary-200 selection:text-ocean-dark">
+
+    <!-- Delete File Modal -->
+    <div id="delete-file-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/40">
+        <div class="bg-white dark:bg-midnight-900 rounded-2xl shadow-xl max-w-lg w-full mx-4 p-6">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                Manage course files
+            </h3>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                These files are stored in your account and used by the AI for this course. Removing a file will delete
+                it from the database and clear its context.
+            </p>
+
+            <div id="files-modal-body" class="max-h-72 overflow-y-auto space-y-2">
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    Loading files...
+                </p>
+            </div>
+
+            <div class="flex justify-end mt-4">
+                <button type="button" onclick="filesModal.close()"
+                    class="px-4 py-2 text-sm rounded-lg border border-slate-200 dark:border-midnight-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-midnight-800">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <!-- 1. Navigation -->
+    <nav class="sticky top-0 z-50 w-full glass border-b border-primary-100 dark:border-midnight-700 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="router.navigate('dashboard')">
+                    <div class="bg-focus-gradient p-2 rounded-lg shadow-lg shadow-primary-500/20"><i
+                            data-lucide="brain-circuit" class="text-white w-6 h-6"></i></div>
+                    <span
+                        class="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-focus-gradient">StudyFlow</span>
+                </div>
+
+                <!-- Desktop Nav -->
+                <div class="hidden sm:flex sm:space-x-8 items-center">
+                    <button onclick="router.navigate('dashboard')" id="nav-dashboard"
+                        class="nav-link border-b-2 border-primary-500 text-ocean-dark dark:text-white font-medium px-1 pt-1 text-sm transition-colors">Dashboard</button>
+                    <button onclick="router.navigate('courses')" id="nav-courses"
+                        class="nav-link border-b-2 border-transparent hover:border-primary-300 text-slate-500 dark:text-slate-400 hover:text-primary-700 dark:hover:text-primary-400 font-medium px-1 pt-1 text-sm transition-colors">My
+                        Courses</button>
+
+                    <div class="h-6 w-px bg-slate-200 dark:bg-midnight-700 mx-2"></div>
+
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle-btn" onclick="theme.toggle()"
+                        class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-midnight-800 text-slate-500 dark:text-slate-400 transition-colors"
+                        title="Toggle Dark Mode">
+                        <i data-lucide="moon" class="w-5 h-5"></i>
+                    </button>
+
+                    <!-- Profile Dropdown Container -->
+                    <div class="relative ml-2" id="profile-menu-container">
+                        <button onclick="ui.toggleDropdown()"
+                            class="h-9 w-9 rounded-full bg-gradient-to-br from-primary-400 to-ocean text-white flex items-center justify-center font-bold text-sm shadow-md border-2 border-white dark:border-midnight-800 hover:scale-105 transition-transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:ring-offset-midnight-900"></button>
+
+                        <!-- Dropdown (No Subscription) -->
+                        <div id="profile-dropdown"
+                            class="absolute right-0 mt-2 w-56 bg-white dark:bg-midnight-800 rounded-xl shadow-xl border border-primary-100 dark:border-midnight-700 py-1 hidden transform opacity-0 scale-95 transition-all duration-200 origin-top-right z-50">
+                            <div
+                                class="px-4 py-3 border-b border-slate-100 dark:border-midnight-700 bg-slate-50 dark:bg-midnight-900/50 rounded-t-xl">
+                                <p class="text-sm font-bold text-slate-900 dark:text-white" id="dropdown-user-name"></p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 truncate" id="dropdown-user-email">
+                                </p>
+                            </div>
+                            <div class="py-1">
+                                <button onclick="router.navigate('profile'); ui.closeDropdown();"
+                                    class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-midnight-700 hover:text-primary-600 flex items-center gap-2"><i
+                                        data-lucide="user" class="w-4 h-4"></i> My Profile</button>
+                                <button onclick="router.navigate('settings'); ui.closeDropdown();"
+                                    class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-midnight-700 hover:text-primary-600 flex items-center gap-2"><i
+                                        data-lucide="settings" class="w-4 h-4"></i> Settings</button>
+                            </div>
+                            <div class="border-t border-slate-100 dark:border-midnight-700 py-1">
+                                <button onclick="auth.logout()"
+                                    class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"><i
+                                        data-lucide="log-out" class="w-4 h-4"></i> Log Out</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="app-container" class="flex-1 overflow-y-auto custom-scrollbar relative flex flex-col">
+        <div class="flex-1">
+
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard"
+                class="view-section max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <h1 id="welcome-message" class="text-3xl font-bold text-slate-900 dark:text-white">Good Morning!
+                            ☀️</h1>
+                    </div>
+                    <button onclick="router.navigate('new-course')"
+                        class="bg-focus-gradient hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-primary-500/30 transition-all active:scale-95 flex items-center gap-2"><i
+                            data-lucide="plus"></i> New Course</button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div
+                        class="bg-white dark:bg-midnight-800 p-6 rounded-2xl shadow-sm border border-primary-100 dark:border-midnight-700 relative overflow-hidden group hover:shadow-md transition-all">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><i
+                                data-lucide="flame" class="w-16 h-16 text-primary-500"></i></div>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Study
+                            Streak</p>
+                        <div class="mt-2 flex items-baseline gap-2"><span
+                                class="text-4xl font-bold text-slate-900 dark:text-white" id="stat-streak">0</span><span
+                                class="text-sm text-primary-600 dark:text-primary-400 font-medium">Days</span></div>
+                    </div>
+                    <div
+                        class="bg-white dark:bg-midnight-800 p-6 rounded-2xl shadow-sm border border-primary-100 dark:border-midnight-700 relative overflow-hidden group hover:shadow-md transition-all">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><i
+                                data-lucide="brain" class="w-16 h-16 text-primary-500"></i></div>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                            Knowledge Mastery</p>
+                        <div class="mt-2 flex items-baseline gap-2"><span
+                                class="text-4xl font-bold text-slate-900 dark:text-white" id="stat-mastery">0%</span>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-white dark:bg-midnight-800 p-6 rounded-2xl shadow-sm border border-primary-100 dark:border-midnight-700 relative overflow-hidden group hover:shadow-md transition-all">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><i
+                                data-lucide="files" class="w-16 h-16 text-primary-500"></i></div>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                            Documents Processed</p>
+                        <div class="mt-2 flex items-baseline gap-2"><span
+                                class="text-4xl font-bold text-slate-900 dark:text-white" id="stat-docs">0</span><span
+                                class="text-sm text-slate-400 dark:text-slate-500 font-medium">Files</span></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2"><i
+                                    data-lucide="book-open" class="w-5 h-5 text-primary-500"></i> Recent Courses</h2>
+                            <button onclick="router.navigate('courses')"
+                                class="text-sm text-primary-600 hover:text-primary-700 font-medium">View All</button>
+                        </div>
+                        <div class="space-y-4" id="dashboard-course-list">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div
+                            class="bg-white dark:bg-midnight-800 p-5 rounded-2xl shadow-sm border border-primary-100 dark:border-midnight-700">
+                            <h3 class="font-bold text-slate-800 dark:text-white mb-4">Retention Analytics</h3>
+                            <div id="retention-chart" class="w-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: MY COURSES -->
+            <div id="view-courses"
+                class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+                <div class="flex justify-between items-center mb-8">
+                    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">My Courses</h1>
+                    <div class="flex gap-4">
+                        <div class="relative">
+                            <input type="text" placeholder="Search courses..."
+                                class="pl-10 pr-4 py-2 rounded-xl border border-primary-200 dark:border-midnight-700 bg-white dark:bg-midnight-800 text-sm focus:ring-2 focus:ring-primary-500 outline-none w-64 text-slate-700 dark:text-slate-300">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                        </div>
+                        <button onclick="router.navigate('new-course')"
+                            class="bg-focus-gradient text-white px-4 py-2 rounded-xl font-medium shadow-lg shadow-primary-500/30 flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Add Course
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="all-courses-grid">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+
+            <!-- VIEW: NEW COURSE FORM -->
+            <div id="view-new-course"
+                class="view-section hidden max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+                <button onclick="router.navigate('courses')"
+                    class="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 mb-6 flex items-center gap-2 transition-colors">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Courses
+                </button>
+                <div
+                    class="bg-white dark:bg-midnight-800 rounded-3xl shadow-xl shadow-primary-500/10 border border-primary-100 dark:border-midnight-700 overflow-hidden">
+                    <div
+                        class="bg-primary-50/50 dark:bg-midnight-900/50 px-8 py-6 border-b border-primary-100 dark:border-midnight-700">
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Create New Course</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Set up a new B.Tech subject workspace
+                        </p>
+                    </div>
+                    <!-- Form with File Upload Logic -->
+                    <form onsubmit="window.courseManager.handleAddCourse(event)" class="p-8 space-y-6">
+                        <div style="display:none;">{% csrf_token %}</div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Engineering
+                                Branch</label>
+                            <select id="nc-branch"
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-midnight-600 bg-white dark:bg-midnight-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <option value="CSE">Computer Science Engineering (CSE)</option>
+                                <option value="ECE">Electronics & Communication (ECE)</option>
+                                <option value="ME">Mechanical Engineering (ME)</option>
+                                <option value="CE">Civil Engineering (CE)</option>
+                                <option value="IT">Information Technology (IT)</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label
+                                    class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Subject
+                                    Name</label><input type="text" id="nc-name" placeholder="e.g. Data Structures"
+                                    required
+                                    class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-midnight-600 bg-white dark:bg-midnight-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-slate-400">
+                            </div>
+                            <div><label
+                                    class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Semester</label><select
+                                    id="nc-sem"
+                                    class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-midnight-600 bg-white dark:bg-midnight-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="1">1st Semester</option>
+                                    <option value="2">2nd Semester</option>
+                                    <option value="3">3rd Semester</option>
+                                    <option value="4">4th Semester</option>
+                                    <option value="5">5th Semester</option>
+                                    <option value="6">6th Semester</option>
+                                    <option value="7">7th Semester</option>
+                                    <option value="8">8th Semester</option>
+                                </select></div>
+                        </div>
+                        <!-- File Uploader Added Here -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Upload
+                                Syllabus / Notes</label>
+                            <label
+                                class="flex flex-col items-center justify-center w-full h-40 border-2 border-primary-200 dark:border-midnight-600 border-dashed rounded-xl cursor-pointer bg-primary-50/30 dark:bg-midnight-900/30 hover:bg-primary-50 dark:hover:bg-midnight-900 transition-all group">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <i data-lucide="cloud-upload"
+                                        class="w-8 h-8 text-primary-400 group-hover:text-primary-600 mb-3 transition-colors"></i>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                                        <span class="font-semibold text-primary-600 dark:text-primary-400">Click to
+                                            upload</span> or drag and drop
+                                    </p>
+                                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" id="nc-filename-display">
+                                        PDF, DOCX, or TXT (MAX. 20MB)</p>
+                                </div>
+                                <input id="nc-file" type="file" class="hidden"
+                                    onchange="document.getElementById('nc-filename-display').innerText = this.files[0] ? this.files[0].name : 'PDF, DOCX, or TXT (MAX. 20MB)'" />
+                            </label>
+                        </div>
+                        <div class="pt-4 flex justify-end gap-3">
+                            <button type="button" onclick="router.navigate('courses')"
+                                class="px-6 py-3 rounded-xl text-slate-500 font-medium hover:bg-slate-100 dark:hover:bg-midnight-700 transition-colors">Cancel</button>
+                            <button type="submit"
+                                class="px-8 py-3 rounded-xl bg-focus-gradient text-white font-bold shadow-lg shadow-primary-500/20 hover:opacity-90 active:scale-95 transition-all">Create
+                                Course</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- VIEW SETTINGS -->
+            <div id="view-settings"
+                class="view-section hidden max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+                <!-- Settings Content -->
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Settings</h1>
+                <div class="space-y-6">
+                    <div
+                        class="bg-white dark:bg-midnight-800 rounded-2xl p-6 border border-primary-100 dark:border-midnight-700 shadow-sm">
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i data-lucide="user-circle" class="w-5 h-5 text-primary-500"></i> Account
+                        </h2>
+                        <form id="settings-form" onsubmit="window.settings.saveProfile(event)" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Display
+                                        Name</label>
+                                    <input type="text" id="settings-displayname" value="John Doe"
+                                        class="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-midnight-600 bg-slate-50 dark:bg-midnight-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="Enter your full name">
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+                                    <input type="email" id="settings-email" value="john@university.edu" disabled
+                                        class="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-midnight-600 bg-slate-100 dark:bg-midnight-900/50 text-slate-500 dark:text-slate-400 cursor-not-allowed">
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">University</label>
+                                    <input type="text" id="settings-university" value="IIT Delhi"
+                                        class="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-midnight-600 bg-slate-50 dark:bg-midnight-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="Enter your university">
+                                </div>
+                            </div>
+                            <div class="md:col-span-3 flex justify-center mt-6">
+                                <button type="submit"
+                                    class="bg-focus-gradient hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-primary-500/30 transition-all active:scale-95 flex items-center gap-2"
+                                    style="padding: 9px 40px;">
+                                    <i data-lucide="save" class="w-4 h-4"></i>
+                                    Save Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- VIEW PROFILE -->
+            <div id="view-profile"
+                class="view-section hidden max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+                <div class="bg-gradient-to-r from-primary-600 to-ocean-light rounded-3xl p-8 text-white mb-8">
+                    <div class="flex items-center gap-6">
+                        <!-- Avatar with initials -->
+                        <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center text-primary-600 text-3xl font-bold shadow-xl"
+                            id="profile-avatar">JD</div>
+                        <div>
+                            <!-- Full name -->
+                            <h1 class="text-3xl font-bold" id="profile-fullname"></h1>
+                            <!-- Email -->
+                            <p class="text-primary-100 mt-1" id="profile-email"></p>
+                            <!-- University -->
+                            <p class="text-primary-100 mt-1" id="profile-university"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Profile Details Section -->
+                <div
+                    class="bg-white dark:bg-midnight-800 rounded-2xl p-6 border border-primary-100 dark:border-midnight-700 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Profile Details</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Full Name</label>
+                            <p class="text-slate-900 dark:text-white mt-1" id="profile-detail-name"></p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+                            <p class="text-slate-900 dark:text-white mt-1" id="profile-detail-email">
+                            </p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">University</label>
+                            <p class="text-slate-900 dark:text-white mt-1" id="profile-detail-university"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- VIEW: COURSE DETAIL (Same) -->
+            <div id="view-course-detail" class="view-section hidden h-full flex flex-col animate-slide-in"
+                style="height: calc(100vh - 4rem);">
+                <div
+                    class="bg-white dark:bg-midnight-800 border-b border-primary-100 dark:border-midnight-700 px-6 py-4 flex justify-between items-center shadow-sm z-10">
+                    <div class="flex items-center gap-4">
+                        <button onclick="router.navigate('courses')"
+                            class="p-2 hover:bg-slate-100 dark:hover:bg-midnight-700 rounded-full transition-colors text-slate-500 dark:text-slate-400"><i
+                                data-lucide="arrow-left" class="w-5 h-5"></i></button>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 dark:text-white" id="detail-title">Biology 101
+                            </h2>
+                            <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400"><span
+                                    class="flex items-center gap-1"><i data-lucide="check-circle"
+                                        class="w-3 h-3 text-green-500"></i> Gemini RAG Active</span><span>•</span><span
+                                    id="detail-files">0 Files Indexed</span></div>
+
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="button" id="open-files-modal-btn" onclick="filesModal.open()"
+                            class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-red-500 hover:bg-red-600 text-white shadow-sm">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            Delete Files
+                        </button>
+                        <button onclick="readButtonClicked()"
+                            class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-focus-gradient hover:opacity-90 rounded-lg shadow-md shadow-primary-500/20 transition-all active:scale-95">
+                            Read
+                        </button>
+
+
+                        <button onclick="ui.toggleUploadModal()"
+                            class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-midnight-900 hover:bg-primary-100 dark:hover:bg-midnight-700 rounded-lg transition-colors border border-transparent dark:border-midnight-700"><i
+                                data-lucide="upload-cloud" class="w-4 h-4"></i> Add Notes</button>
+                        <button onclick="router.navigate('quiz')"
+                            class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-focus-gradient hover:opacity-90 rounded-lg shadow-md shadow-primary-500/20 transition-all active:scale-95"><i
+                                data-lucide="play-circle" class="w-4 h-4"></i> Generate Quiz</button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-hidden relative bg-slate-50 dark:bg-midnight-900 flex flex-col">
+                    <div id="chat-container"
+                        class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar md:pb-32"></div>
+                    <div
+                        class="absolute bottom-0 w-full bg-white/90 dark:bg-midnight-800/90 backdrop-blur-md border-t border-primary-100 dark:border-midnight-700 p-4 transition-colors">
+                        <div class="max-w-3xl mx-auto relative">
+                            <form id="chat-form" onsubmit="chat.handleSubmit(event)">
+                                <div style="display:none;">{% csrf_token %}</div>
+                                <input type="text" autocomplete="off" id="chat-input"
+                                    class="w-full pl-5 pr-14 py-4 rounded-xl border border-primary-200 dark:border-midnight-700 bg-primary-50/50 dark:bg-midnight-900 focus:bg-white dark:focus:bg-midnight-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-700 dark:text-slate-200 shadow-sm"
+                                    placeholder="Ask about your notes..." required>
+                                <button type="submit"
+                                    class="absolute right-2 top-2 p-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors shadow-sm"><i
+                                        data-lucide="send" class="w-5 h-5"></i>
+                                </button>
+                                <button type="button" id="stop-button" onclick="chat.stopResponse()"
+                                    class="absolute right-14 top-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors shadow-sm hidden"
+                                    title="Stop response">
+                                    <i data-lucide="square" class="w-5 h-5"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: QUIZ (Same) -->
+            <div id="view-quiz"
+                class="view-section hidden h-full flex flex-col items-center justify-center p-4 animate-fade-in bg-primary-50 dark:bg-midnight-900"
+                style="height: calc(100vh - 4rem);">
+                <div class="max-w-2xl w-full">
+                    <div class="flex items-center justify-between text-slate-600 dark:text-slate-400" style="margin-bottom: -2.5rem;
+    padding: 3rem 1rem;">
+                        <button onclick="router.navigate('course-detail')"
+                            class="hover:text-primary-600 dark:hover:text-primary-400 flex items-center gap-1 text-sm font-medium">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                            Quit Quiz
+                        </button>
+                        <span
+                            class="font-mono text-sm bg-white dark:bg-midnight-800 px-3 py-1 rounded-full border border-slate-200 dark:border-midnight-700">
+                            Q <span id="quiz-current">1</span>/<span id="quiz-total">0</span>
+                        </span>
+                    </div>
+
+                    <div
+                        class="bg-white dark:bg-midnight-800 rounded-3xl shadow-xl shadow-primary-500/10 border border-primary-100 dark:border-midnight-700 overflow-hidden relative transition-colors">
+
+                        <!-- Step 0: question count selection -->
+                        <div id="quiz-start-screen"
+                            class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/95 dark:bg-midnight-900/95">
+                            <h3 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-4">
+                                How many questions?
+                            </h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-400 mb-6">
+                                Choose how many multiple-choice questions you want in this quiz.
+                            </p>
+                            <div class="flex flex-wrap gap-3 justify-center">
+                                <button type="button"
+                                    class="px-5 py-2.5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 shadow-sm"
+                                    onclick="quizUi.startGenerate(10)">
+                                    10 questions
+                                </button>
+                                <button type="button"
+                                    class="px-5 py-2.5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 shadow-sm"
+                                    onclick="quizUi.startGenerate(20)">
+                                    20 questions
+                                </button>
+                                <button type="button"
+                                    class="px-5 py-2.5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 shadow-sm"
+                                    onclick="quizUi.startGenerate(30)">
+                                    30 questions
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Loading overlay -->
+                        <div id="quiz-loading"
+                            class="absolute inset-0 bg-white dark:bg-midnight-800 z-20 flex flex-col items-center justify-center hidden">
+                            <div
+                                class="w-12 h-12 border-4 border-primary-100 dark:border-midnight-700 border-t-primary-500 rounded-full animate-spin">
+                            </div>
+                            <p class="mt-4 text-slate-500 dark:text-slate-400 font-medium animate-pulse">
+                                Generating questions...
+                            </p>
+                        </div>
+
+                        <!-- Quiz content -->
+                        <div id="quiz-content" class="p-8 transition-opacity duration-300 opacity-0" style="@media (min-width: 640px) {
+    .sm\:p-10 {
+        padding: 1.5rem;
+    }
+}">
+                            <span
+                                class="text-xs font-bold tracking-wider text-primary-500 dark:text-primary-400 uppercase mb-2 block">
+                                Multiple Choice
+                            </span>
+                            <h3 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-8 leading-snug"
+                                id="question-text">
+                                Loading...
+                            </h3>
+                            <div class="space-y-3" id="options-container"></div>
+                        </div>
+
+                        <div
+                            class="bg-slate-50 dark:bg-midnight-900/50 px-8 py-4 border-t border-slate-100 dark:border-midnight-700 flex justify-between items-center">
+                            <button id="prev-btn" onclick="quizUi.prevQuestion()"
+                                class="hidden text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+                                Previous
+                            </button>
+                            <button id="next-btn" onclick="quizUi.nextOrSubmit()"
+                                class="hidden bg-primary-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors">
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <footer id="main-footer"
+            class="bg-white dark:bg-midnight-800 border-t border-primary-100 dark:border-midnight-700 mt-auto">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                    <!-- Brand -->
+                    <div class="col-span-1 md:col-span-1">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="bg-focus-gradient p-1.5 rounded-lg shadow-sm">
+                                <i data-lucide="brain-circuit" class="text-white w-5 h-5"></i>
+                            </div>
+                            <span
+                                class="font-bold text-xl tracking-tight text-slate-900 dark:text-white">StudyFlow</span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+                            Your intelligent AI study companion tailored for campus success.
+                            Built with Google Cloud & Gemini.
+                        </p>
+                        <div class="flex gap-4">
+                            <a href="#" class="text-slate-400 hover:text-primary-500 transition-colors"><i
+                                    data-lucide="twitter" class="w-5 h-5"></i></a>
+                            <a href="#" class="text-slate-400 hover:text-primary-500 transition-colors"><i
+                                    data-lucide="github" class="w-5 h-5"></i></a>
+                            <a href="#" class="text-slate-400 hover:text-primary-500 transition-colors"><i
+                                    data-lucide="linkedin" class="w-5 h-5"></i></a>
+                        </div>
+                    </div>
+
+                    <!-- Product -->
+                    <div>
+                        <h4 class="font-bold text-slate-900 dark:text-white mb-4">Product</h4>
+                        <ul class="space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Features</a>
+                            </li>
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Pricing</a>
+                            </li>
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">API
+                                    Docs</a></li>
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Integrations</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Resources -->
+                    <div>
+                        <h4 class="font-bold text-slate-900 dark:text-white mb-4">Resources</h4>
+                        <ul class="space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Study
+                                    Guides</a></li>
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Student
+                                    Blog</a></li>
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Community</a>
+                            </li>
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Help
+                                    Center</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Subscribe -->
+                    <div>
+                        <h4 class="font-bold text-slate-900 dark:text-white mb-4">Stay Updated</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Get the latest study tips and AI
+                            features.</p>
+                        <form onsubmit="event.preventDefault(); ui.showToast('Subscribed to newsletter!');"
+                            class="flex gap-2">
+                            <input type="email" placeholder="Email address"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-midnight-600 bg-slate-50 dark:bg-midnight-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white">
+                            <button type="submit"
+                                class="bg-primary-500 hover:bg-primary-600 text-white p-2 rounded-lg transition-colors shadow-md">
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div
+                    class="border-t border-slate-100 dark:border-midnight-700 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p class="text-xs text-slate-400 dark:text-slate-500">© 2025 StudyFlow AI. All rights reserved.</p>
+                    <div class="flex gap-6 text-xs text-slate-500 dark:text-slate-400">
+                        <a href="#" class="hover:text-primary-600 dark:hover:text-primary-400">Privacy Policy</a>
+                        <a href="#" class="hover:text-primary-600 dark:hover:text-primary-400">Terms of Service</a>
+                        <a href="#" class="hover:text-primary-600 dark:hover:text-primary-400">Cookie Settings</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Upload Modal & Toast (Same as before) -->
+    <div id="upload-modal"
+        class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-midnight-800 rounded-2xl w-full max-w-lg p-6 m-4 shadow-2xl transform transition-all scale-95 border border-transparent dark:border-midnight-700"
+            id="upload-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Upload Course Notes</h3><button
+                    onclick="ui.toggleUploadModal()"
+                    class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><i data-lucide="x"
+                        class="w-5 h-5"></i></button>
+            </div>
+            <form id="upload-form" class="space-y-4">
+                <div style="display:none;">{% csrf_token %}</div><label id="dropzone"
+                    class="flex flex-col items-center justify-center w-full h-64 border-2 border-primary-200 dark:border-midnight-600 border-dashed rounded-xl cursor-pointer bg-primary-50/50 dark:bg-midnight-900/50 hover:bg-primary-50 dark:hover:bg-midnight-900 transition-all duration-300 group">
+                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                        <div
+                            class="w-16 h-16 bg-white dark:bg-midnight-800 rounded-full shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <i data-lucide="cloud-upload" class="w-8 h-8 text-primary-500"></i>
+                        </div>
+                        <p class="mb-2 text-lg text-slate-600 dark:text-slate-300 text-center"><span
+                                class="font-bold text-primary-600 dark:text-primary-400">Click to upload</span> or drag
+                            and drop</p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500">PDF, DOCX, or TXT (MAX. 20MB)</p>
+                    </div><input id="file-input" type="file" class="hidden" onchange="ui.handleFileSelect(this)" />
+                </label>
+            </form>
+            <div class="mt-6 flex justify-end"><button onclick="ui.toggleUploadModal()"
+                    class="text-slate-500 dark:text-slate-400 font-medium text-sm mr-4 hover:text-slate-700 dark:hover:text-slate-200">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast"
+        class="fixed bottom-6 right-6 bg-white dark:bg-midnight-800 border-l-4 border-green-500 shadow-lg rounded-r-lg p-4 flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-500 z-50">
+        <div class="text-green-500"><i data-lucide="check-circle" class="w-5 h-5"></i></div>
+        <div>
+            <h4 class="font-bold text-sm text-slate-900 dark:text-white">Success</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400" id="toast-message">Operation completed.</p>
+        </div>
+    </div>
+
+    <!-- PDF Reader Modal -->
+    <!-- PDF Reader Modal -->
+    <div id="pdf-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-slate-900 rounded-xl w-full max-w-5xl h-[80vh] flex flex-col">
+            <div class="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-700">
+                <div class="text-sm font-semibold">
+                    <span id="pdf-title">Document</span>
+                    <span class="ml-2 text-xs text-slate-500" id="pdf-page-label">
+                        (Page <span id="pdf-current-page">1</span> / <span id="pdf-total-pages">1</span>)
+                    </span>
+                </div>
+                <button id="pdf-close-btn" class="text-xs px-2 py-1 rounded border border-slate-300 hover:bg-slate-100">
+                    Close
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-hidden flex flex-col">
+                <div id="pdf-canvas-container" class="flex-1 overflow-auto flex bg-slate-50">
+                    <canvas id="pdf-canvas"></canvas>
+                </div>
+                <div
+                    class="flex items-center justify-between px-4 py-2 border-t border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center gap-2">
+                        <button id="pdf-prev"
+                            class="text-xs px-3 py-1 rounded border border-slate-300 hover:bg-slate-100">&larr;
+                            Prev</button>
+                        <button id="pdf-next"
+                            class="text-xs px-3 py-1 rounded border border-slate-300 hover:bg-slate-100">Next
+                            &rarr;</button>
+                    </div>
+                    <button id="pdf-complete-btn"
+                        class="text-xs px-3 py-1 rounded bg-primary-500 text-white hover:bg-primary-600">
+                        Mark as completed
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+
+        window.pdfReader = (function () {
+            let pdfDoc = null;
+            let currentPage = 1;
+            let totalPages = 1;
+            let pagesReadMax = 0;
+            let fileId = null;
+            let courseId = null;
+            let pdfUrl = null;
+
+            const modal = document.getElementById('pdf-modal');
+            const canvas = document.getElementById('pdf-canvas');
+            const ctx = canvas ? canvas.getContext('2d') : null;
+            const currentPageSpan = document.getElementById('pdf-current-page');
+            const totalPagesSpan = document.getElementById('pdf-total-pages');
+            const titleSpan = document.getElementById('pdf-title');
+            const prevBtn = document.getElementById('pdf-prev');
+            const nextBtn = document.getElementById('pdf-next');
+            const closeBtn = document.getElementById('pdf-close-btn');
+            const completeBtn = document.getElementById('pdf-complete-btn');
+
+            function renderPage(num) {
+                if (!pdfDoc || !canvas) return;
+
+                pdfDoc.getPage(num).then(function (page) {
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+
+                    const renderContext = {
+                        canvasContext: ctx,
+                        viewport: viewport
+                    };
+
+                    const renderTask = page.render(renderContext);
+                    renderTask.promise.then(function () {
+                        currentPageSpan.textContent = num.toString();
+                        if (num > pagesReadMax) {
+                            pagesReadMax = num;
+                        }
+                        if (prevBtn) prevBtn.disabled = currentPage <= 1;
+                        if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+
+                        updateProgress(false);
+                    });
+                });
+            }
+
+            // Event handlers
+            if (prevBtn) prevBtn.addEventListener('click', function () {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderPage(currentPage);
+                }
+            });
+
+            if (nextBtn) nextBtn.addEventListener('click', function () {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderPage(currentPage);
+                }
+            });
+
+            if (closeBtn) closeBtn.addEventListener('click', function () {
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+                pdfDoc = null;
+            });
+
+            if (completeBtn) completeBtn.addEventListener('click', async function () {
+                if (fileId && courseId) {
+                    await updateProgress(true);
+                }
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+            });
+
+            async function updateProgress(markComplete) {
+                if (!fileId || !courseId) return;
+
+                const payload = {
+                    fileid: fileId,
+                    courseid: courseId,
+                    pagesread: markComplete ? totalPages : pagesReadMax,
+                    totalpages: totalPages,
+                    iscompleted: !!markComplete,
+                    timespentminutes: 1
+                };
+
+                try {
+                    const res = await fetch('/api/progress/update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json();
+                    if (res.ok && data.status === 'success') {
+                        console.log('Progress updated', data);
+
+                        // NEW: refresh course list so the progress bar updates
+                        if (window.courseManager && typeof window.courseManager.fetchCourses === 'function') {
+                            await window.courseManager.fetchCourses();
+                        }
+                    } else {
+                        console.warn('Progress update failed:', data);
+                    }
+                } catch (err) {
+                    console.error('Progress update error:', err);
+                }
+            }
+
+            return {
+                open: function (pdfurl, fileid, courseid, title) {
+                    pdfUrl = pdfurl;
+                    fileId = fileid;
+                    courseId = courseid;
+
+                    if (!modal || !canvas) {
+                        console.error('PDF modal elements not found');
+                        alert('PDF modal not available');
+                        return;
+                    }
+
+                    if (titleSpan) titleSpan.textContent = title || 'Document';
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+
+                    console.log('Loading PDF from URL:', pdfurl);
+
+                    // Load PDF with improved error handling
+                    const loadingTask = pdfjsLib.getDocument(pdfurl);
+                    loadingTask.promise.then(function (pdf) {
+                        pdfDoc = pdf;
+                        totalPages = pdf.numPages;
+                        currentPage = 1;
+                        pagesReadMax = 1;
+                        totalPagesSpan.textContent = totalPages.toString();
+                        console.log('PDF loaded successfully, total pages:', totalPages);
+                        renderPage(currentPage);
+                    }).catch(function (err) {
+                        console.error('PDF load error:', err);
+                        console.error('Failed to load from URL:', pdfurl);
+                        alert('Could not load PDF: ' + err.message + '\n\nTries to load from: ' + pdfurl);
+                        modal.classList.add('hidden');
+                        modal.classList.remove('flex');
+                    });
+                }
+            };
+        })();
+
+        async function readButtonClicked() {
+            const currentCourseId = window.courseManager?.currentCourseId;
+            if (!currentCourseId) {
+                alert('Please select a course first');
+                return;
+            }
+
+            try {
+                // Fetch all files for this course
+                const res = await fetch(`/api/courses/${currentCourseId}/files/`);
+                const result = await res.json();
+
+                if (!res.ok || result.status !== 'success') {
+                    alert('Failed to load files');
+                    return;
+                }
+
+                const files = result.data;
+                if (!files || files.length === 0) {
+                    alert('No files uploaded for this course. Please upload notes first.');
+                    return;
+                }
+
+                // Open the first file
+                const firstFile = files[0];
+                await openPdfForFile(currentCourseId, firstFile.id, firstFile.filename);
+            } catch (err) {
+                console.error('readButtonClicked error:', err);
+                alert('Failed to open PDF: ' + err.message);
+            }
+        }
+
+        async function openPdfForFile(courseId, fileId, fileNameFallback) {
+            console.log('Opening PDF:', { courseId, fileId, fileNameFallback });
+            try {
+                const res = await fetch(`/api/files/${fileId}/`);
+                const result = await res.json();
+
+                if (!res.ok || result.status !== 'success') {
+                    console.error('File detail error:', result);
+                    alert('Could not open file. Backend error: ' + (result.message || 'Unknown error'));
+                    return;
+                }
+
+                const info = result.data;
+                const pdfUrl = info.pdf_url;               // e.g. "/media/YourFile.pdf"
+                const title = info.filename || fileNameFallback || 'Document';
+
+                if (!pdfUrl) {
+                    alert('PDF URL not available on server.');
+                    return;
+                }
+
+                console.log('PDF details:', { pdfUrl, courseId, title });
+
+                // This URL is now something like "/media/filename.pdf"
+                window.pdfReader.open(pdfUrl, info.file_id || fileId, courseId, title);
+            } catch (err) {
+                console.error('openPdfForFile error:', err);
+                alert('Could not open file: ' + err.message);
+            }
+        }
+
+
+        const filesModal = {
+            courseId: null,
+            open() {
+                this.courseId = window.courseManager?.currentCourseId || null;
+                const modal = document.getElementById('delete-file-modal');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    this.loadFiles();
+                }
+            },
+            close() {
+                const modal = document.getElementById('delete-file-modal');
+                if (modal) modal.classList.add('hidden');
+                this.courseId = null;
+            },
+
+            async loadFiles() {
+                const body = document.getElementById('files-modal-body');
+                if (!body) return;
+                body.innerHTML = `<p class="text-sm text-slate-500 dark:text-slate-400">Loading files...</p>`;
+
+                if (!this.courseId) {
+                    body.innerHTML = `<p class="text-sm text-slate-500 dark:text-slate-400">No course selected.</p>`;
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`/api/courses/${this.courseId}/files/`);
+                    const result = await res.json();
+
+                    if (result.status !== 'success') {
+                        body.innerHTML = `<p class="text-sm text-red-500">Failed to load files.</p>`;
+                        return;
+                    }
+
+                    const files = result.data || [];
+                    if (!files.length) {
+                        body.innerHTML = `<p class="text-sm text-slate-500 dark:text-slate-400">No files are uploaded for this course.</p>`;
+                        return;
+                    }
+
+                    body.innerHTML = '';
+                    files.forEach(f => {
+                        const row = document.createElement('div');
+                        row.className = 'flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50 dark:bg-midnight-800';
+                        row.dataset.fileId = f.id;
+                        row.innerHTML = `
+                <div class="flex flex-col">
+                    <span class="text-sm text-slate-800 dark:text-slate-100 truncate max-w-xs">${f.filename}</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                        ${(f.file_size / 1024).toFixed(1)} KB
+                    </span>
+                </div>
+                <button type="button"
+                        class="text-xs px-3 py-1 rounded-full bg-red-500 hover:bg-red-600 text-white"
+                        onclick="filesModal.deleteFile(${f.id}, '${f.filename.replace(/'/g, "\\'")}')">
+                    Delete
+                </button>
+            `;
+                        body.appendChild(row);
+                    });
+                } catch (err) {
+                    console.error('Error loading files:', err);
+                    body.innerHTML = `<p class="text-sm text-red-500">Error loading files.</p>`;
+                }
+            },
+
+
+            async deleteFile(fileId, filename) {
+                if (!confirm(`Delete "${filename}" from this course?`)) {
+                    return;
+                }
+
+                const row = document.querySelector(`#files-modal-body [data-file-id="${fileId}"]`);
+                if (!row) {
+                    // Fallback: just call API
+                    await this._deleteOnServer(fileId);
+                    return;
+                }
+
+                // 1) Start animation
+                row.classList.add('file-row-leave');
+                // Force reflow so the transition applies
+                void row.offsetWidth;
+                row.classList.add('file-row-leave-active');
+
+                // 2) After animation, call API and remove from DOM
+                setTimeout(async () => {
+                    try {
+                        const ok = await this._deleteOnServer(fileId);
+                        if (ok) {
+                            if (row.parentNode) row.parentNode.removeChild(row);
+
+                            const body = document.getElementById('files-modal-body');
+                            if (body && !body.children.length) {
+                                body.innerHTML = `<p class="text-sm text-slate-500 dark:text-slate-400">No files are uploaded for this course.</p>`;
+                            }
+
+                            // Optional: also remove from localStorage context
+                            if (this.courseId != null) {
+                                const key = `course-${this.courseId}-files`;
+                                const stored = localStorage.getItem(key);
+                                if (stored) {
+                                    let arr = [];
+                                    try { arr = JSON.parse(stored); } catch (e) { }
+                                    const filtered = arr.filter(f => f.id !== fileId && f.file_id !== fileId);
+                                    localStorage.setItem(key, JSON.stringify(filtered));
+                                }
+                            }
+                        } else {
+                            // If server failed, revert animation
+                            row.classList.remove('file-row-leave', 'file-row-leave-active');
+                            alert('Failed to delete file on server.');
+                        }
+                    } catch (err) {
+                        console.error('Delete error:', err);
+                        row.classList.remove('file-row-leave', 'file-row-leave-active');
+                        alert('Network error while deleting file.');
+                    }
+                }, 200); // match CSS transition duration
+            },
+
+            async _deleteOnServer(fileId) {
+                const res = await fetch('/api/files/delete/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ file_id: fileId })
+                });
+                const result = await res.json();
+                if (result.status !== 'success') {
+                    console.error('Delete error:', result.message);
+                    return false;
+                }
+                return true;
+            }
+
+        };
+
+
+        let CURRENT_FIRST_NAME = null;
+
+        function computeGreeting() {
+            const hour = new Date().getHours();
+            if (hour < 12) return "Good Morning";
+            if (hour < 17) return "Good Afternoon";
+            return "Good Evening";
+        }
+
+        // ============ AUTHENTICATION CHECK ============
+        // Prevent unauthenticated access to dashboard
+        (function checkAuthentication() {
+            fetch('/api/dashboard/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
+                }
+            })
+                .then(response => {
+                    if (response.status === 401) {
+                        console.log('User not authenticated, redirecting to login...');
+                        window.location.href = '/register/';
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check error:', error);
+                });
+        })();
+        // --- 1. CSRF Helper ---
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        // --- 2. Helper: Ordinal Suffix ---
+        function getOrdinal(n) {
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        }
+
+        function updateProfileFromDashboard(data) {
+            // Navbar dropdown
+            const dropdownName = document.getElementById('dropdown-user-name');
+            const dropdownEmail = document.getElementById('dropdown-user-email');
+            if (dropdownName) dropdownName.innerText = data.username;
+            if (dropdownEmail) dropdownEmail.innerText = data.useremail;
+
+            // Navbar avatar (round button)
+            const profileMenuContainer = document.getElementById('profile-menu-container');
+            if (profileMenuContainer) {
+                const avatarBtn = profileMenuContainer.querySelector('button');
+                if (avatarBtn) {
+                    if (data.user_avatar) {
+                        avatarBtn.innerHTML =
+                            `<img src="${data.user_avatar}" class="h-9 w-9 rounded-full object-cover" alt="Avatar" />`;
+                    } else {
+                        const initials = (data.username || '?')
+                            .split(' ')
+                            .filter(Boolean)
+                            .map(p => p[0].toUpperCase())
+                            .join('')
+                            .slice(0, 2);
+                        avatarBtn.textContent = initials || 'U';
+                    }
+                }
+            }
+
+            // ===== PROFILE PAGE - HERO SECTION =====
+            const profileView = document.getElementById('view-profile');
+            if (profileView) {
+                // Avatar
+                const avatarCircle = profileView.querySelector('div.w-24.h-24');
+                if (avatarCircle) {
+                    if (data.user_avatar) {
+                        avatarCircle.innerHTML = `<img src="${data.user_avatar}" class="w-24 h-24 rounded-full object-cover" alt="Avatar">`;
+                    } else {
+                        const initials = data.username?.split(' ').filter(Boolean).map(p => p[0].toUpperCase()).join('').slice(0, 2) || 'U';
+                        avatarCircle.textContent = initials;
+                    }
+                }
+
+                // Hero heading (Full name)
+                const profileFullname = profileView.querySelector('#profile-fullname');
+                if (profileFullname) profileFullname.innerText = data.username || 'User';
+
+                // Hero email
+                const profileEmail = profileView.querySelector('#profile-email');
+                if (profileEmail) profileEmail.innerText = data.useremail || 'email@example.com';
+
+                // Hero university
+                const profileUni = profileView.querySelector('#profile-university');
+                if (profileUni) profileUni.innerText = data.university || 'University';
+
+                // ===== PROFILE DETAILS SECTION - DYNAMIC DATA =====
+                const detailName = profileView.querySelector('#profile-detail-name');
+                if (detailName) detailName.innerText = data.username || 'User';
+
+                const detailEmail = profileView.querySelector('#profile-detail-email');
+                if (detailEmail) detailEmail.innerText = data.useremail || 'email@example.com';
+
+                const detailUniv = profileView.querySelector('#profile-detail-university');
+                if (detailUniv) detailUniv.innerText = data.university || 'Not specified';
+            }
+
+            // ===== SETTINGS PAGE - POPULATE FORM =====
+            const settingsForm = document.getElementById('settings-form');
+            if (settingsForm) {
+                const displaynameInput = document.getElementById('settings-displayname');
+                const emailInput = document.getElementById('settings-email');
+                const universityInput = document.getElementById('settings-university');
+
+                if (displaynameInput) displaynameInput.value = data.username || '';
+                if (emailInput) emailInput.value = data.useremail || '';
+                if (universityInput) universityInput.value = data.university || '';
+            }
+
+            // ===== DASHBOARD GREETING =====
+            CURRENTFIRSTNAME = data.firstname;  // Use firstname from API
+            const welcomeEl = document.getElementById('welcome-message');
+            if (welcomeEl) {
+                const greet = computeGreeting();
+                welcomeEl.innerText = `${greet}, ${data.firstname}!`;  // NO " Student"
+            }
+
+            // ===== STATS =====
+            const stats = data.stats;
+            document.getElementById('stat-streak').innerText = stats.streak ?? 0;
+            document.getElementById('stat-mastery').innerText = stats.mastery ?? 0;
+            document.getElementById('stat-docs').innerText = stats.docs ?? 0;
+
+            if (window.renderChart) {
+                window.renderChart(data.retentiondata);
+            }
+        }
+
+        async function fetchDashboard() {
+            try {
+                const response = await fetch('/api/dashboard/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                });
+                const result = await response.json();
+                if (result.status !== 'success') return;
+
+                const data = result.data;
+                updateProfileFromDashboard(data);
+
+                CURRENT_FIRST_NAME = data.first_name || data.username;
+
+                // Time-based greeting + first name
+                const welcomeEl = document.getElementById('welcome-message');
+                if (welcomeEl) {
+                    const greet = computeGreeting();
+                    welcomeEl.innerText = `${greet}, ${CURRENT_FIRST_NAME}!`;
+                }
+
+                // Stats and chart as before
+                const stats = data.stats || {};
+                document.getElementById('stat-streak').innerText = stats.streak ?? 0;
+                document.getElementById('stat-mastery').innerText = stats.mastery ?? 0;
+                document.getElementById('stat-docs').innerText = stats.docs ?? 0;
+                if (window.renderChart) window.renderChart(data.retention_data || []);
+
+                // Call helpers below for profile/navbar
+                updateProfileFromDashboard(data);
+            } catch (e) {
+                console.error('Dashboard error', e);
+            }
+        }
+        // ============ LOGOUT HANDLER ============
+        const auth = {
+            async logout() {
+                try {
+                    const response = await fetch('/api/logout/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value || getCookie('csrftoken')
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        ui.showToast('Logged out successfully');
+
+                        // Clear local data
+                        localStorage.clear();
+                        sessionStorage.clear();
+
+                        // Redirect to login
+                        setTimeout(() => {
+                            window.location.href = '/register/';
+                        }, 1000);
+                    } else {
+                        ui.showToast('Logout failed: ' + (data.message || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    ui.showToast('An error occurred');
+                    setTimeout(() => {
+                        window.location.href = '/register/';
+                    }, 2000);
+                }
+            }
+        };
+
+        // --- 4. Data Manager ---
+        window.courseManager = {
+            currentCourseId: null,
+            courses: [],
+
+            init: async () => {
+                await window.courseManager.fetchCourses();
+                await fetchDashboard();
+            },
+
+            fetchCourses: async function () {
+                try {
+                    const response = await fetch('/api/courses/');
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        window.courseManager.courses = result.data;
+                    } else {
+                        window.courseManager.courses = [];
+                    }
+                } catch (e) {
+                    console.error('Course fetch error', e);
+                    window.courseManager.courses = [];
+                }
+                window.courseManager.renderCourses();
+            },
+
+            renderCourses: () => {
+                const dashContainer = document.getElementById('dashboard-course-list');
+                if (dashContainer)
+                    dashContainer.innerHTML = window.courseManager.courses
+                        .slice(0, 2)
+                        .map(c => window.courseManager.createCardHtml(c, 'dash'))
+                        .join('');
+
+                const allContainer = document.getElementById('all-courses-grid');
+                if (allContainer)
+                    allContainer.innerHTML = window.courseManager.courses
+                        .map(c => window.courseManager.createCardHtml(c, 'all'))
+                        .join('');
+
+                lucide.createIcons();
+            },
+
+
+            createCardHtml: (c, context) => {
+                const uniqueId = `menu-${context}-${c.id}`;
+                const isCompleted = c.is_completed;
+                const statusText = isCompleted ? "Completed" : c.status;
+                const semesterText = getOrdinal(c.semester) + " Sem"; // Updated Suffix Logic
+
+                let statusColorClass;
+                if (isCompleted) {
+                    statusColorClass = 'text-slate-600 bg-slate-100 dark:text-slate-400 dark:bg-slate-800 dark:border-slate-700';
+                } else if (c.status === "Just Started") {
+                    statusColorClass = 'text-primary-700 bg-primary-100 dark:text-primary-400 dark:bg-primary-900/30 dark:border-primary-800';
+                } else if (c.status === "On Track") {
+                    statusColorClass = 'text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/30 dark:border-green-800';
+                } else {
+                    statusColorClass = 'text-orange-700 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30 dark:border-orange-800';
+                }
+
+                const opacityClass = isCompleted ? 'opacity-100 z-50 grayscale-[0.5]' : '';
+                const progressColor = isCompleted ? 'bg-slate-400' : 'bg-focus-gradient';
+                const progressVal = isCompleted ? 100 : (c.progress || 0);
+
+                return `
+                <div class="relative bg-white dark:bg-midnight-800 rounded-2xl p-5 border border-primary-100 dark:border-midnight-700 shadow-sm hover:shadow-md hover:border-primary-300 dark:hover:border-primary-600 transition-all group ${opacityClass}">
+                    <div class="cursor-pointer" onclick="window.courseManager.openCourse(${c.id})">
+                        <div class="flex justify-between items-start pr-8">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-primary-50 dark:bg-midnight-900 text-primary-600 dark:text-primary-400 flex items-center justify-center border border-primary-100 dark:border-midnight-700 group-hover:scale-105 transition-transform"><i data-lucide="book" class="w-6 h-6"></i></div>
+                                <div><h3 class="font-bold text-lg text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">${c.name}</h3><p class="text-sm text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">${c.branch} • ${semesterText}</p></div>
+                            </div>
+                            <span onclick="window.courseManager.cycleStatus(${c.id}, event)" class="${statusColorClass} text-xs font-bold px-2.5 py-1 rounded-full border border-transparent whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity" title="Click to change status">${statusText}</span>
+                        </div>
+                        <div class="mt-4">
+                            <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1"><span>Progress</span><span>${progressVal}%</span></div>
+                            <div class="w-full bg-slate-100 dark:bg-midnight-900 rounded-full h-2"><div class="${progressColor} h-2 rounded-full transition-all duration-500" style="width: ${progressVal}%"></div></div>
+                        </div>
+                    </div>
+                    <div class="absolute top-4 right-2 z-10">
+                        <button onclick="window.courseManager.toggleMenu('${uniqueId}', event)" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-midnight-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+                        <div id="${uniqueId}" class="hidden absolute right-0 mt-1 w-48 bg-white dark:bg-midnight-900 rounded-xl shadow-xl border border-primary-100 dark:border-midnight-600 py-1 z-50 transform origin-top-right transition-all">
+                            <button onclick="window.courseManager.editCourse(${c.id}, '${uniqueId}', event)" class="w-full text-left px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-midnight-800 flex items-center gap-2"><i data-lucide="edit-2" class="w-4 h-4"></i> Rename Course</button>
+                            <button onclick="window.courseManager.toggleCompleted(${c.id}, '${uniqueId}', event)" class="w-full text-left px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-midnight-800 flex items-center gap-2"><i data-lucide="${isCompleted ? 'rotate-ccw' : 'check-square'}" class="w-4 h-4"></i> ${isCompleted ? 'Mark Active' : 'Mark Completed'}</button>
+                            <div class="h-px bg-slate-100 dark:bg-midnight-700 my-1"></div>
+                            <button onclick="window.courseManager.deleteCourse(${c.id}, '${uniqueId}', event)" class="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Delete Course</button>
+                        </div>
+                    </div>
+                </div>`;
+            },
+
+            // --- Menu Actions (Same) ---
+            toggleMenu: (uniqueId, event) => {
+                event.stopPropagation();
+                document.querySelectorAll('[id^="menu-"]').forEach(el => { if (el.id !== uniqueId) el.classList.add('hidden'); });
+                const menu = document.getElementById(uniqueId);
+                if (menu) menu.classList.toggle('hidden');
+            },
+            cycleStatus: (id, event) => {
+                event.stopPropagation();
+                const course = window.courseManager.courses.find(c => c.id === id);
+                if (course) {
+                    if (course.is_completed) { course.is_completed = false; course.status = "On Track"; }
+                    else if (course.status === "Just Started") course.status = "On Track";
+                    else if (course.status === "On Track") course.status = "Review Needed";
+                    else if (course.status === "Review Needed") course.status = "Just Started";
+                    window.courseManager.renderCourses();
+                }
+            },
+            editCourse: async (id, uniqueId, event) => {
+                event.stopPropagation();
+                window.courseManager.toggleMenu(uniqueId, event);
+                const course = window.courseManager.courses.find(c => c.id === id);
+                if (!course) return;
+
+                const newName = prompt("Enter new course name:", course.name);
+                if (!newName || !newName.trim()) return;
+
+                try {
+                    const response = await fetch(`/api/courses/${id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ name: newName.trim() })
+                    });
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        course.name = result.data.name;
+                        window.courseManager.renderCourses();
+                        ui.showToast("Course renamed");
+                    } else {
+                        ui.showToast("Rename failed: " + (result.message || 'Unknown error'));
+                    }
+                } catch (e) {
+                    console.error('Rename error', e);
+                    ui.showToast("Rename failed (network)");
+                }
+            },
+
+            toggleCompleted: async (id, uniqueId, event) => {
+                event.stopPropagation();
+                window.courseManager.toggleMenu(uniqueId, event);
+                const course = window.courseManager.courses.find(c => c.id === id);
+                if (!course) return;
+
+                const newCompleted = !course.is_completed;
+                const newStatus = newCompleted ? course.status : "On Track";
+
+                try {
+                    const response = await fetch(`/api/courses/${id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({
+                            is_completed: newCompleted,
+                            status: newStatus
+                        })
+                    });
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        course.is_completed = result.data.is_completed;
+                        course.status = result.data.status;
+                        window.courseManager.renderCourses();
+                        if (course.is_completed) {
+                            confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+                            ui.showToast("Completed!");
+                        } else {
+                            ui.showToast("Reactivated");
+                        }
+                    } else {
+                        ui.showToast("Update failed: " + (result.message || 'Unknown error'));
+                    }
+                } catch (e) {
+                    console.error('Toggle completed error', e);
+                    ui.showToast("Update failed (network)");
+                }
+            },
+            deleteCourse: async (id, uniqueId, event) => {
+                event.stopPropagation();
+                window.courseManager.toggleMenu(uniqueId, event);
+                if (!confirm("Delete this course?")) return;
+
+                try {
+                    const response = await fetch(`/api/courses/${id}/`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        window.courseManager.courses =
+                            window.courseManager.courses.filter(c => c.id !== id);
+                        window.courseManager.renderCourses();
+                        ui.showToast("Course deleted");
+                    } else {
+                        ui.showToast("Delete failed: " + (result.message || 'Unknown error'));
+                    }
+                } catch (e) {
+                    console.error('Delete error', e);
+                    ui.showToast("Delete failed (network)");
+                }
+            },
+
+
+            handleAddCourse: async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('nc-name').value;
+                const branch = document.getElementById('nc-branch').value;
+                const semester = parseInt(document.getElementById('nc-sem').value);
+                const fileInput = document.getElementById('nc-file');
+                const file = fileInput.files[0];
+
+                try {
+                    // 1. Create Course
+                    const response = await fetch('/api/courses/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                        body: JSON.stringify({ name, branch, semester })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        const newCourseId = result.data.id;
+
+                        // 2. Upload File if selected
+                        if (file) {
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            ui.showToast(`Creating course & uploading ${file.name}...`);
+
+                            const uploadResponse = await fetch(`/api/courses/${newCourseId}/upload/`, {
+                                method: 'POST',
+                                headers: { 'X-CSRFToken': csrftoken },
+                                body: formData
+                            });
+                            const uploadResult = await uploadResponse.json();
+
+                            if (uploadResult.status === 'success') {
+                                // Save URI to Local Storage
+                                const key = `course_${newCourseId}_files`;
+                                localStorage.setItem(key, JSON.stringify([uploadResult.data.gemini_resource_name]));
+                            }
+                        } else {
+                            ui.showToast("Course created successfully!");
+                        }
+
+                        // Refresh
+                        await window.courseManager.fetchCourses();
+                        router.navigate('courses');
+                        e.target.reset();
+                        document.getElementById('nc-filename-display').innerText = "PDF, DOCX, or TXT (MAX. 20MB)";
+                    } else {
+                        ui.showToast("Error: " + result.message);
+                    }
+                } catch (err) {
+                    console.log("Mocking Create Course + File");
+                    const mockId = Date.now();
+                    window.courseManager.courses.unshift({ id: mockId, name, branch, semester, progress: 0, status: "Just Started", completed: false, files: file ? 1 : 0 });
+
+                    if (file) {
+                        const key = `course_${mockId}_files`;
+                        localStorage.setItem(key, JSON.stringify(["mock-file-resource-id"]));
+                    }
+
+                    window.courseManager.renderCourses();
+                    router.navigate('courses');
+                    ui.showToast("Course created (Mocked)!");
+                    e.target.reset();
+                    document.getElementById('nc-filename-display').innerText = "PDF, DOCX, or TXT (MAX. 20MB)";
+                }
+            },
+
+            openCourse: (id) => {
+                window.courseManager.currentCourseId = id;
+                const course = window.courseManager.courses.find(c => c.id === id);
+                if (!course) return;
+
+                document.getElementById('detail-title').innerText = course.name;
+
+                // Get LocalStorage Files
+                const key = `course_${id}_files`;
+                const storedUris = JSON.parse(localStorage.getItem(key) || '[]');
+                const fileCount = storedUris.length;
+                document.getElementById('detail-files').innerText = `${fileCount} Files Indexed`;
+
+                const chatContainer = document.getElementById('chat-container');
+                chatContainer.innerHTML = '';
+
+                const introDiv = document.createElement('div');
+                introDiv.className = "flex gap-4 max-w-3xl mx-auto";
+
+                let introText = "";
+                if (fileCount > 0) {
+                    introText = "Hello! I've analyzed your notes. I can help you find specific definitions, summarize complex processes, or create revision schedules.";
+                } else {
+                    introText = `Hello! I see you haven't uploaded any notes for <b>${course.name}</b> yet. What specific topic do you need help with today?`;
+                }
+
+                introDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-focus-gradient flex items-center justify-center text-white flex-shrink-0 shadow-sm"><i data-lucide="sparkles" class="w-4 h-4"></i></div>
+                    <div class="space-y-2"><div class="bg-white dark:bg-midnight-800 border border-primary-100 dark:border-midnight-700 rounded-2xl rounded-tl-none p-5 text-slate-700 dark:text-slate-200 shadow-sm leading-relaxed"><p>${introText}</p></div></div>
+                `;
+                chatContainer.appendChild(introDiv);
+
+                setTimeout(() => {
+                    chat.loadChatHistory();
+                }, 200);
+
+                router.navigate('course-detail');
+            }
+        };
+
+        // --- 3. UI Interactions ---
+        const ui = {
+            toggleDropdown: () => { const drop = document.getElementById('profile-dropdown'); if (drop.classList.contains('hidden')) { drop.classList.remove('hidden'); setTimeout(() => { drop.classList.remove('opacity-0', 'scale-95'); drop.classList.add('opacity-100', 'scale-100'); }, 10); } else ui.closeDropdown(); },
+            closeDropdown: () => { const drop = document.getElementById('profile-dropdown'); drop.classList.remove('opacity-100', 'scale-100'); drop.classList.add('opacity-0', 'scale-95'); setTimeout(() => drop.classList.add('hidden'), 200); },
+            toggleUploadModal: () => { const modal = document.getElementById('upload-modal'); const content = document.getElementById('upload-modal-content'); if (modal.classList.contains('hidden')) { modal.classList.remove('hidden'); setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10); } else { modal.classList.add('opacity-0'); content.classList.remove('scale-100'); content.classList.add('scale-95'); setTimeout(() => modal.classList.add('hidden'), 300); } },
+            handleFileSelect: async (input) => {
+                if (input.files.length > 0) {
+                    const currentId = window.courseManager.currentCourseId;
+                    if (!currentId) return;
+
+                    ui.toggleUploadModal();
+                    ui.showToast(`Uploading ${input.files[0].name}...`);
+
+                    const formData = new FormData();
+                    formData.append('file', input.files[0]);
+
+                    try {
+                        const response = await fetch(`/api/courses/${currentId}/upload/`, {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': csrftoken },
+                            body: formData
+                        });
+                        const result = await response.json();
+
+                        if (result.status === 'success') {
+                            const key = `course_${currentId}_files`;
+                            const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                            existing.push(result.data.gemini_resource_name);
+                            localStorage.setItem(key, JSON.stringify(existing));
+
+                            document.getElementById('detail-files').innerText = `${existing.length} Files Indexed`;
+                            ui.showToast('File indexed to Gemini Knowledge Base!');
+                        } else {
+                            ui.showToast('Upload failed: ' + result.message);
+                        }
+                    } catch (e) {
+                        console.log("Mocking File Upload (Context)");
+                        setTimeout(() => {
+                            const key = `course_${currentId}_files`;
+                            const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                            existing.push("mock-file-id");
+                            localStorage.setItem(key, JSON.stringify(existing));
+                            document.getElementById('detail-files').innerText = `${existing.length} Files Indexed`;
+                            ui.showToast('File indexed (Mocked)!');
+                        }, 1000);
+                    }
+                }
+            },
+            showToast: (msg) => { const toast = document.getElementById('toast'); const msgEl = document.getElementById('toast-message'); if (!toast || !msgEl) return; msgEl.innerText = msg; toast.classList.remove('translate-y-20', 'opacity-0'); setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000); },
+            animateCountUp: (id, end, suffix = "") => { const el = document.getElementById(id); let start = 0; const duration = 2000; const step = timestamp => { if (!start) start = timestamp; const progress = Math.min((timestamp - start) / duration, 1); el.innerHTML = Math.floor(progress * (end - 0) + 0) + suffix; if (progress < 1) window.requestAnimationFrame(step); }; window.requestAnimationFrame(step); },
+        };
+
+        let chatController = null;  // For abort control
+
+        const chat = {
+            isStreaming: false,
+            currentStreamId: null,
+
+            handleSubmit: async function (e) {
+                e.preventDefault();
+
+                // Don't allow sending while streaming
+                if (chat.isStreaming) {
+                    ui.showToast('Please wait for the current response to finish');
+                    return;
+                }
+
+                const input = document.getElementById('chat-input');
+                if (!input.value.trim()) return;
+
+                // Get uploaded files (default to empty array)
+                const currentId = window.courseManager.currentCourseId;
+                const fileKey = `course-${currentId}-files`;
+                let fileResources = [];
+
+                try {
+                    const stored = localStorage.getItem(fileKey);
+                    if (stored) {
+                        const files = JSON.parse(stored);
+                        fileResources = files
+                            .filter(f => !f.deleted)
+                            .map(f => f.resource_name);
+                    }
+                } catch (e) {
+                    console.warn('File parsing error:', e);
+                    fileResources = [];
+                }
+
+
+                // Show user message
+                chat.appendMessage(input.value, 'user');
+
+                // Show typing indicator
+                chat.showTypingIndicator();
+
+                const userMessage = input.value;
+                input.value = '';
+                input.focus();
+
+                // Show stop button
+                chat.showStopButton();
+
+                try {
+                    // Create abort controller for this request
+                    chatController = new AbortController();
+
+                    const response = await fetch('api/chat/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({
+                            message: userMessage,
+                            file_resources: fileResources,
+                            course_id: currentId
+                        }),
+                        signal: chatController.signal
+                    });
+
+                    // Check if request was aborted
+                    if (!response.ok && response.status === 0) {
+                        chat.removeTypingIndicator();
+                        chat.hideStopButton();
+                        return;
+                    }
+
+                    const result = await response.json();
+                    chat.removeTypingIndicator();
+
+                    if (result.status === 'success' && result.data && result.data.response) {
+                        chat.streamResponse(result.data.response);
+                    } else {
+                        const errorMsg = result.message || 'Failed to get response';
+                        chat.appendMessage(errorMsg, 'error');
+                        chat.hideStopButton();
+                    }
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        console.log('Chat request stopped by user');
+                        chat.appendMessage('Response stopped by you.', 'system');
+                    } else {
+                        console.error('Chat error:', error);
+                        chat.appendMessage('Connection error. Try again.', 'error');
+                    }
+                    chat.removeTypingIndicator();
+                    chat.hideStopButton();
+                }
+            },
+
+            appendMessage: function (text, type) {
+                const container = document.getElementById('chat-container');
+                const div = document.createElement('div');
+                div.className = 'flex gap-4 max-w-3xl mx-auto ' + (type === 'user' ? 'flex-row-reverse' : '');
+
+                let avatarHTML = '';
+                let messageHTML = '';
+
+                if (type === 'user') {
+                    avatarHTML = '<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0 shadow-sm font-bold text-xs">U</div>';
+                    messageHTML = `<div class="bg-focus-gradient text-white rounded-2xl rounded-br-none p-4 shadow-md shadow-primary-500/20">${text}</div>`;
+                } else if (type === 'error') {
+                    avatarHTML = '<div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center flex-shrink-0"><i data-lucide="alert-circle" class="w-4 h-4"></i></div>';
+                    messageHTML = `<div class="bg-red-50 dark:bg-red-900/30 border border-red-400 rounded-2xl rounded-tl-none p-5 text-red-700 dark:text-red-400 shadow-sm leading-relaxed">${text}</div>`;
+                } else if (type === 'system') {
+                    avatarHTML = '<div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center flex-shrink-0"><i data-lucide="info" class="w-4 h-4"></i></div>';
+                    messageHTML = `<div class="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-none p-4 text-gray-700 dark:text-gray-300 shadow-sm text-sm italic">${text}</div>`;
+                } else {
+                    avatarHTML = '<div class="w-8 h-8 rounded-full bg-focus-gradient flex items-center justify-center text-white flex-shrink-0 shadow-sm"><i data-lucide="sparkles" class="w-4 h-4"></i></div>';
+                    messageHTML = `<div class="bg-white dark:bg-midnight-800 border border-primary-100 dark:border-midnight-700 rounded-2xl rounded-tl-none p-5 text-slate-700 dark:text-slate-200 shadow-sm leading-relaxed">${text}</div>`;
+                }
+
+                div.innerHTML = avatarHTML + '<div class="space-y-2">' + messageHTML + '</div>';
+                container.appendChild(div);
+                container.scrollTop = container.scrollHeight;
+
+                if (window.lucide) lucide.createIcons();
+            },
+
+            streamResponse: function (responseText) {
+                chat.isStreaming = true;
+
+                const container = document.getElementById('chat-container');
+
+                const div = document.createElement('div');
+                div.className = 'flex gap-4 max-w-3xl mx-auto';
+                div.id = `message-${Date.now()}`;
+                chat.currentStreamId = div.id;
+
+                const avatarHTML = '<div class="w-8 h-8 rounded-full bg-focus-gradient flex items-center justify-center text-white flex-shrink-0 shadow-sm"><i data-lucide="sparkles" class="w-4 h-4"></i></div>';
+
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'bg-white dark:bg-midnight-800 border border-primary-100 dark:border-midnight-700 rounded-2xl rounded-tl-none p-5 text-slate-700 dark:text-slate-200 shadow-sm leading-relaxed whitespace-pre-wrap';
+                messageDiv.id = 'typing-target';
+                messageDiv.textContent = '';
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'space-y-2';
+                contentDiv.appendChild(messageDiv);
+
+                div.innerHTML = avatarHTML;
+                div.appendChild(contentDiv);
+                container.appendChild(div);
+
+                // Stream text character by character
+                let i = 0;
+                const type = () => {
+                    // Check if user clicked stop
+                    if (!chat.isStreaming) {
+                        messageDiv.id = '';
+                        chat.hideStopButton();
+                        return;
+                    }
+
+                    if (i < responseText.length) {
+                        messageDiv.textContent += responseText.charAt(i);
+                        container.scrollTop = container.scrollHeight;
+                        i++;
+                        setTimeout(type, 15);
+                    } else {
+                        // Done typing
+                        messageDiv.id = '';
+                        chat.isStreaming = false;
+                        chat.hideStopButton();
+                        if (window.lucide) lucide.createIcons();
+                    }
+                };
+
+                // Start typing
+                type();
+            },
+
+            showTypingIndicator: function () {
+                const container = document.getElementById('chat-container');
+                const div = document.createElement('div');
+                div.className = 'flex gap-4 max-w-3xl mx-auto';
+                div.id = 'typing-indicator';
+
+                const avatarHTML = '<div class="w-8 h-8 rounded-full bg-focus-gradient flex items-center justify-center text-white flex-shrink-0 shadow-sm"><i data-lucide="sparkles" class="w-4 h-4"></i></div>';
+
+                const dotsHTML = '<div class="bg-white dark:bg-midnight-800 border border-primary-100 dark:border-midnight-700 rounded-2xl rounded-tl-none p-4 flex gap-1"><div class="w-2 h-2 rounded-full bg-primary-500 animate-bounce"></div><div class="w-2 h-2 rounded-full bg-primary-500 animate-bounce" style="animation-delay: 0.2s;"></div><div class="w-2 h-2 rounded-full bg-primary-500 animate-bounce" style="animation-delay: 0.4s;"></div></div>';
+
+                div.innerHTML = avatarHTML + '<div class="space-y-2">' + dotsHTML + '</div>';
+                container.appendChild(div);
+                container.scrollTop = container.scrollHeight;
+            },
+
+            removeTypingIndicator: function () {
+                const indicator = document.getElementById('typing-indicator');
+                if (indicator) {
+                    indicator.remove();
+                }
+            },
+
+            showStopButton: function () {
+                const btn = document.getElementById('stop-button');
+                if (btn) {
+                    btn.classList.remove('hidden');
+                    btn.classList.add('block');
+                }
+            },
+
+            hideStopButton: function () {
+                const btn = document.getElementById('stop-button');
+                if (btn) {
+                    btn.classList.add('hidden');
+                    btn.classList.remove('block');
+                }
+            },
+
+            stopResponse: function () {
+                chat.isStreaming = false;
+                if (chatController) {
+                    chatController.abort();
+                }
+                chat.hideStopButton();
+                chat.removeTypingIndicator();
+            },
+
+            loadChatHistory: async function () {
+                /**
+                 * Load previous chat messages for this course
+                 */
+                const currentId = window.courseManager.currentCourseId;
+                if (!currentId) return;
+
+                try {
+                    const response = await fetch(`api/chat-history/${currentId}/`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'success' && result.data.messages) {
+                        const container = document.getElementById('chat-container');
+                        const messages = result.data.messages;
+
+                        // Clear existing messages
+                        container.innerHTML = '';
+
+                        if (messages.length === 0) {
+                            // Show welcome message if no chat history
+                            const div = document.createElement('div');
+                            div.className = 'flex gap-4 max-w-3xl mx-auto';
+                            div.innerHTML = '<div class="w-8 h-8 rounded-full bg-focus-gradient flex items-center justify-center text-white flex-shrink-0 shadow-sm"><i data-lucide="sparkles" class="w-4 h-4"></i></div>' +
+                                '<div class="space-y-2 max-w-80"><div class="bg-white dark:bg-midnight-800 border border-primary-100 dark:border-midnight-700 rounded-2xl rounded-tl-none p-5 text-slate-700 dark:text-slate-200 shadow-sm">Hi! I\'ve analyzed your notes. Ask me anything about this course!</div></div>';
+                            container.appendChild(div);
+                        } else {
+                            // Load each message
+                            messages.forEach(msg => {
+                                const type = msg.role === 'user' ? 'user' : msg.role === 'assistant' ? 'assistant' : 'system';
+                                chat.appendMessage(msg.message, type);
+                            });
+                        }
+
+                        if (window.lucide) lucide.createIcons();
+                    }
+                } catch (error) {
+                    console.error('Error loading chat history:', error);
+                }
+            }
+        };
+
+        const originalOpenCourse = window.courseManager.openCourse;
+
+        window.courseManager.openCourse = function (id) {
+            // Call original function
+            originalOpenCourse.call(this, id);
+
+            // Load chat history for this course
+            setTimeout(() => {
+                chat.loadChatHistory();
+            }, 200);
+        };
+
+        function normalizeLatex(text) {
+            // Turn \\vec into \vec, etc.
+            return text.replace(/\\\\/g, '\\');
+        }
+
+        const quizUi = {
+            quizId: null,
+            questions: [],
+            currentIndex: 0,
+            answers: {},
+            startTime: null,
+            totalQuestions: 0,
+
+            init() {
+                this.quizId = null;
+                this.questions = [];
+                this.currentIndex = 0;
+                this.answers = {};
+                this.startTime = null;
+                this.totalQuestions = 0;
+
+                const startScreen = document.getElementById('quiz-start-screen');
+                const loading = document.getElementById('quiz-loading');
+                const content = document.getElementById('quiz-content');
+
+                if (startScreen) startScreen.classList.remove('hidden');
+                if (loading) loading.classList.add('hidden');
+                if (content) content.classList.add('opacity-0');
+            },
+
+            async startGenerate(numQuestions) {
+                const courseId = window.courseManager?.currentCourseId;
+                if (!courseId) {
+                    alert('Please select a course first.');
+                    return;
+                }
+
+                document.getElementById('quiz-start-screen').classList.add('hidden');
+                const loading = document.getElementById('quiz-loading');
+                if (loading) loading.classList.remove('hidden');
+                const content = document.getElementById('quiz-content');
+                if (content) content.classList.add('opacity-0');
+
+                try {
+                    const fileId = null;
+
+                    const res = await fetch('/api/quiz/generate/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({
+                            course_id: courseId,
+                            file_id: fileId,
+                            num_questions: numQuestions,
+                            quiz_title: 'Generated Quiz'
+                        })
+                    });
+
+                    if (!res.ok) {
+                        try {
+                            const errorData = await res.json();
+                            throw new Error(errorData.message || `Server error (${res.status})`);
+                        } catch {
+                            throw new Error(`Server error (${res.status})`);
+                        }
+                    }
+
+                    const result = await res.json();
+                    if (result.status !== 'success') {
+                        throw new Error(result.message || 'Failed to generate quiz');
+                    }
+
+                    const data = result.data;
+                    this.quizId = data.quiz_id;
+                    this.questions = data.questions || [];
+                    this.totalQuestions = data.num_questions || this.questions.length;
+                    this.currentIndex = 0;
+                    this.answers = {};
+                    this.startTime = Date.now();
+
+                    if (!this.questions.length) {
+                        throw new Error('No questions returned from server');
+                    }
+
+                    const totalSpan = document.getElementById('quiz-total');
+                    if (totalSpan) totalSpan.textContent = this.totalQuestions.toString();
+
+                    this.renderQuestion();
+
+                    if (loading) loading.classList.add('hidden');
+                    if (content) content.classList.remove('opacity-0');
+                    document.getElementById('next-btn').classList.remove('hidden');
+                    document.getElementById('prev-btn').classList.add('hidden');
+                } catch (err) {
+                    console.error('Quiz generate error:', err);
+                    alert(err.message || 'Could not generate quiz.');
+                    if (document.getElementById('quiz-start-screen')) {
+                        document.getElementById('quiz-start-screen').classList.remove('hidden');
+                    }
+                    const loading = document.getElementById('quiz-loading');
+                    if (loading) loading.classList.add('hidden');
+                }
+            },
+
+            renderQuestion() {
+                const qObj = this.questions[this.currentIndex];
+                if (!qObj) return;
+
+                const qText = document.getElementById('question-text');
+                const optionsContainer = document.getElementById('options-container');
+                const currentSpan = document.getElementById('quiz-current');
+
+                // FIX: Render LaTeX question
+                if (qText) {
+                    qText.innerHTML = qObj.q || 'Question';
+                    // Try to typeset with MathJax
+                    if (window.MathJax && window.MathJax.typesetPromise) {
+                        MathJax.typesetPromise([qText]);
+                    }
+                }
+
+                if (currentSpan) currentSpan.textContent = (this.currentIndex + 1).toString();
+
+                if (optionsContainer) {
+                    optionsContainer.innerHTML = '';
+                    (qObj.options || []).forEach((opt, idx) => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className =
+                            'w-full text-left px-4 py-3 rounded-xl border text-sm ' +
+                            'border-slate-200 dark:border-midnight-700 ' +
+                            'hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-midnight-700 ' +
+                            'transition-colors';
+                        if (this.answers[this.currentIndex] === idx) {
+                            btn.classList.add('border-primary-500', 'bg-primary-50', 'dark:bg-midnight-700');
+                        }
+                        btn.textContent = opt;
+                        btn.onclick = () => this.selectOption(idx);
+                        optionsContainer.appendChild(btn);
+                    });
+                }
+
+                const prevBtn = document.getElementById('prev-btn');
+                const nextBtn = document.getElementById('next-btn');
+                if (prevBtn) {
+                    prevBtn.classList.toggle('hidden', this.currentIndex === 0);
+                }
+                if (nextBtn) {
+                    nextBtn.textContent =
+                        this.currentIndex === this.questions.length - 1 ? 'Submit' : 'Next';
+                }
+            },
+
+            selectOption(optionIndex) {
+                this.answers[this.currentIndex] = optionIndex;
+                this.renderQuestion();
+            },
+
+            prevQuestion() {
+                if (this.currentIndex > 0) {
+                    this.currentIndex -= 1;
+                    this.renderQuestion();
+                }
+            },
+
+            nextOrSubmit() {
+                if (this.currentIndex < this.questions.length - 1) {
+                    this.currentIndex += 1;
+                    this.renderQuestion();
+                } else {
+                    this.submit();
+                }
+            },
+
+            async submit() {
+                if (!this.quizId) return;
+                const timeSpent = this.startTime ? Math.floor((Date.now() - this.startTime) / 1000) : 0;
+
+                try {
+                    const res = await fetch('/api/quiz/submit/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({
+                            quiz_id: this.quizId,
+                            answers: this.answers,
+                            time_spent_seconds: timeSpent
+                        })
+                    });
+
+                    const result = await res.json();
+                    if (result.status !== 'success') {
+                        throw new Error(result.message || 'Failed to submit quiz');
+                    }
+
+                    const data = result.data;
+                    this.showScore(data);
+                } catch (err) {
+                    console.error('Quiz submit error:', err);
+                    alert(err.message || 'Could not submit quiz.');
+                }
+            },
+
+            showScore(data) {
+                const qText = document.getElementById('question-text');
+                const optionsContainer = document.getElementById('options-container');
+                const nextBtn = document.getElementById('next-btn');
+                const prevBtn = document.getElementById('prev-btn');
+
+                // FIX: Show score without trying to render undefined questionText
+                if (qText) {
+                    qText.innerHTML = `<p class="text-lg font-semibold">Quiz Complete!</p><p>You scored <strong>${data.score}/${this.questions.length}</strong> (${data.percentage}%)</p>`;
+                }
+                if (optionsContainer) {
+                    optionsContainer.innerHTML =
+                        '<p class="text-sm text-slate-600 dark:text-slate-300">Quiz completed. You can close this view or go back to your course.</p>';
+                }
+                if (nextBtn) nextBtn.classList.add('hidden');
+                if (prevBtn) prevBtn.classList.add('hidden');
+            }
+        };
+
+
+        const settings = {
+            async saveProfile(e) {
+                e.preventDefault();
+
+                const displaynameInput = document.getElementById('settings-displayname');
+                const universityInput = document.getElementById('settings-university');
+                const btn = document.querySelector('#settings-form button[type="submit"]');
+
+                if (!displaynameInput || !universityInput) return;
+
+                const displayname = displaynameInput.value.trim();
+                const university = universityInput.value.trim();
+
+                // Validation
+                if (!displayname) {
+                    ui.showToast('Please enter your display name');
+                    return;
+                }
+
+                // Show loading state
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
+                btn.disabled = true;
+
+                try {
+                    const response = await fetch('/api/update-profile/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({
+                            displayname: displayname,
+                            university: university
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        ui.showToast('✅ Profile updated successfully!');
+
+                        // Reload dashboard data to show updated name everywhere
+                        await fetchDashboard();
+
+                        // Reset button
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        lucide.createIcons();
+                    } else {
+                        ui.showToast('❌ ' + (result.message || 'Update failed'));
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Settings save error:', error);
+                    ui.showToast('❌ Error saving settings');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }
+        };
+
+        // --- Core & Init ---
+        window.onclick = function (event) {
+            if (!event.target.closest('#profile-menu-container')) ui.closeDropdown();
+            if (!event.target.closest('[id^="menu-"]') && !event.target.closest('button[onclick^="window.courseManager.toggleMenu"]')) document.querySelectorAll('[id^="menu-"]').forEach(el => el.classList.add('hidden'));
+        }
+
+        const theme = {
+            toggle: () => {
+                const html = document.documentElement; const btn = document.getElementById('theme-toggle-btn'); const isDark = html.classList.contains('dark');
+                if (isDark) { html.classList.remove('dark'); localStorage.theme = 'light'; btn.innerHTML = `<i data-lucide="moon" class="w-5 h-5"></i>`; }
+                else { html.classList.add('dark'); localStorage.theme = 'dark'; btn.innerHTML = `<i data-lucide="sun" class="w-5 h-5"></i>`; }
+                lucide.createIcons();
+                if (window.retentionChart) window.retentionChart.updateOptions({ theme: { mode: html.classList.contains('dark') ? 'dark' : 'light' }, chart: { background: 'transparent' } });
+            },
+            init: () => {
+                const btn = document.getElementById('theme-toggle-btn');
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); if (btn) btn.innerHTML = `<i data-lucide="sun" class="w-5 h-5"></i>`; }
+                else { document.documentElement.classList.remove('dark'); if (btn) btn.innerHTML = `<i data-lucide="moon" class="w-5 h-5"></i>`; }
+            }
+        };
+
+        const router = {
+            current: 'dashboard',
+            navigate: (viewId) => {
+                document.querySelectorAll('.nav-link').forEach(el => { el.classList.remove('border-primary-500', 'text-ocean-dark', 'dark:text-white'); el.classList.add('border-transparent', 'text-slate-500', 'dark:text-slate-400'); });
+                const activeNav = document.getElementById(`nav-${viewId}`);
+                if (activeNav) { activeNav.classList.remove('border-transparent', 'text-slate-500', 'dark:text-slate-400'); activeNav.classList.add('border-primary-500', 'text-ocean-dark', 'dark:text-white'); }
+
+                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+                const target = document.getElementById(`view-${viewId}`);
+                if (target) { target.classList.remove('hidden'); lucide.createIcons(); }
+
+                const footer = document.getElementById('main-footer');
+                if (viewId === 'course-detail' || viewId === 'quiz') { if (footer) footer.classList.add('hidden'); } else { if (footer) footer.classList.remove('hidden'); }
+                if (viewId === 'quiz') quizUi.init();
+            }
+        };
+
+        window.renderChart = (dataSeries) => {
+            const isDark = document.documentElement.classList.contains('dark');
+            const options = {
+                series: [{ name: 'Retention', data: dataSeries || [0, 0, 0, 0, 0, 0, 0] }],
+                chart: { height: 200, type: 'area', toolbar: { show: false }, fontFamily: 'Inter, sans-serif', background: 'transparent' },
+                theme: { mode: isDark ? 'dark' : 'light' }, colors: ['#0ea5e9'],
+                dataLabels: { enabled: false }, stroke: { curve: 'smooth', width: 2 },
+                fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.05, stops: [0, 90, 100] } },
+                xaxis: { categories: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { colors: isDark ? '#94a3b8' : '#64748b' } } },
+                yaxis: { show: false }, grid: { show: false, padding: { left: -10, right: 0 } }, tooltip: { theme: isDark ? 'dark' : 'light' }
+            };
+            if (window.retentionChart) window.retentionChart.destroy();
+            window.retentionChart = new ApexCharts(document.querySelector("#retention-chart"), options);
+            window.retentionChart.render();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            theme.init();
+            window.courseManager.init();
+            // ui.updateGreeting();
+        });
+    </script>
+</body>
+
+</html>

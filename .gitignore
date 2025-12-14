@@ -1,0 +1,8 @@
+.vscode
+.env
+StudyFlow
+/study-companion
+/media
+/core/__pycache__
+/core/migrations
+/studyflow/__pycache__

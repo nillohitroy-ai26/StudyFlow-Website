@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - StudyFlow</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: { 50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e', 950: '#082f49' },
+                        ocean: { DEFAULT: '#1e40af', dark: '#172554', light: '#3b82f6' },
+                        midnight: { 900: '#0f172a', 800: '#1e293b', 700: '#334155' }
+                    },
+                    backgroundImage: { 'focus-gradient': 'linear-gradient(135deg, #0ea5e9 0%, #22d3ee 100%)' },
+                    animation: { 'fade-in': 'fadeIn 0.5s ease-out forwards', 'slide-up': 'slideUp 0.5s ease-out forwards' },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .margin-10 {
+            margin: 10rem;
+        }
+
+        .margin-15 {
+            margin: 15rem;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #334155;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.8);
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        body,
+        div,
+        nav,
+        button,
+        input {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .footer-link {
+            position: relative;
+            @apply text-slate-500 hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400 transition-colors text-sm;
+        }
+
+        .footer-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background-color: #0ea5e9;
+            transition: width 0.3s;
+        }
+
+        .footer-link:hover::after {
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-primary-50 dark:bg-midnight-900 text-slate-800 dark:text-slate-200 h-screen flex flex-col overflow-hidden selection:bg-primary-200 selection:text-ocean-dark relative">
+
+    <!-- Decorative Background Elements -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div
+            class="absolute -top-40 -right-40 w-96 h-96 bg-primary-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob">
+        </div>
+        <div
+            class="absolute -bottom-40 -left-40 w-96 h-96 bg-ocean-light rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000">
+        </div>
+    </div>
+
+    <!-- 1. Navigation (Consistent with Index) -->
+    <nav class="sticky top-0 z-50 w-full glass border-b border-primary-100 dark:border-midnight-700 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='/'">
+                    <div class="bg-focus-gradient p-2 rounded-lg shadow-lg shadow-primary-500/20">
+                        <i data-lucide="brain-circuit" class="text-white w-6 h-6"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-focus-gradient">
+                        StudyFlow
+                    </span>
+                </div>
+
+                <!-- Desktop Nav -->
+                <div class="flex items-center space-x-4">
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle-btn" onclick="theme.toggle()"
+                        class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-midnight-800 text-slate-500 dark:text-slate-400 transition-colors"
+                        title="Toggle Dark Mode">
+                        <i data-lucide="moon" class="w-5 h-5"></i>
+                    </button>
+
+                    <a href="#"
+                        class="text-sm font-medium text-slate-500 hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400 transition-colors">Help</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto custom-scrollbar relative flex flex-col">
+
+        <!-- View Container -->
+        <div class="flex-1 flex items-center justify-center margin-10 px-4 py-12 min-h-[calc(100vh-8rem)]"
+            id="container"> <!-- Added padding for smaller screens -->
+
+            <div
+                class="w-full max-w-md bg-white dark:bg-midnight-800 rounded-3xl shadow-2xl overflow-hidden border border-white/20 dark:border-white/5 backdrop-blur-lg animate-slide-up mx-auto">
+
+                <!-- Header Section -->
+                <div class="bg-focus-gradient p-8 text-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
+                    <div class="relative z-10">
+                        <div class="inline-flex p-3 rounded-xl bg-white/20 backdrop-blur-md shadow-lg mb-4">
+                            <i data-lucide="brain-circuit" class="text-white w-8 h-8"></i>
+                        </div>
+                        <h1 class="text-2xl font-bold text-white tracking-tight">StudyFlow</h1>
+                        <p class="text-primary-50 text-sm mt-1">Your AI Campus Companion</p>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex border-b border-gray-100 dark:border-midnight-700">
+                    <button onclick="switchTab('login')" id="tab-login"
+                        class="flex-1 py-4 text-sm font-semibold text-primary-600 border-b-2 border-primary-500 transition-colors focus:outline-none bg-slate-50/50 dark:bg-midnight-900/30">
+                        Log In
+                    </button>
+                    <button onclick="switchTab('register')" id="tab-register"
+                        class="flex-1 py-4 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-primary-500 transition-colors focus:outline-none bg-slate-50/50 dark:bg-midnight-900/30">
+                        Sign Up
+                    </button>
+                </div>
+
+                <!-- Forms Container -->
+                <div class="p-8">
+
+                    <!-- Login Form -->
+                    <form id="form-login" class="space-y-6 animate-fade-in" onsubmit="handleLogin(event)">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email
+                                Address</label>
+                            <div class="relative">
+                                <i data-lucide="mail" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                                <input type="email" placeholder="student@university.edu" required
+                                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-midnight-600 bg-gray-50 dark:bg-midnight-900 focus:bg-white dark:focus:bg-midnight-800 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all placeholder:text-gray-400 dark:text-white">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                            <div class="relative">
+                                <i data-lucide="lock" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                                <input type="password" placeholder="••••••••" required
+                                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-midnight-600 bg-gray-50 dark:bg-midnight-900 focus:bg-white dark:focus:bg-midnight-800 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all placeholder:text-gray-400 dark:text-white">
+                            </div>
+                            <div class="flex justify-end mt-1">
+                                <a href="#" class="text-xs text-primary-600 hover:text-primary-700 font-medium">Forgot
+                                    Password?</a>
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                            class="w-full py-3 rounded-xl bg-focus-gradient text-white font-bold shadow-lg shadow-primary-500/30 hover:opacity-90 active:scale-95 transition-all flex justify-center items-center gap-2">
+                            <span>Log In</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </form>
+
+                    <!-- Register Form -->
+                    <form id="form-register" class="space-y-5 hidden animate-fade-in" onsubmit="handleRegister(event)">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First
+                                    Name</label>
+                                <input type="text" placeholder="Alex" required
+                                    class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-midnight-600 bg-gray-50 dark:bg-midnight-900 focus:bg-white dark:focus:bg-midnight-800 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last
+                                    Name</label>
+                                <input type="text" placeholder="Student" required
+                                    class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-midnight-600 bg-gray-50 dark:bg-midnight-900 focus:bg-white dark:focus:bg-midnight-800 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all dark:text-white">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email
+                                Address</label>
+                            <div class="relative">
+                                <i data-lucide="mail" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                                <input type="email" placeholder="student@university.edu" required
+                                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-midnight-600 bg-gray-50 dark:bg-midnight-900 focus:bg-white dark:focus:bg-midnight-800 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all dark:text-white">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">College</label>
+                            <div class="relative">
+                                <i data-lucide="university" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                                <input type="text" placeholder="College Name" required
+                                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-midnight-600 bg-gray-50 dark:bg-midnight-900 focus:bg-white dark:focus:bg-midnight-800 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all dark:text-white">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Create
+                                    Password</label>
+                                <div class="relative">
+                                    <i data-lucide="lock" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                                    <input type="password" placeholder="Min. 8 characters" required
+                                        class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-midnight-600 bg-gray-50 dark:bg-midnight-900 focus:bg-white dark:focus:bg-midnight-800 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all dark:text-white">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm
+                                    Password</label>
+                                <div class="relative">
+                                    <i data-lucide="lock" class="absolute left-3 top-3 text-gray-400 w-5 h-5"></i>
+                                    <input type="password" placeholder="Retype your Password" required
+                                        class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-midnight-600 bg-gray-50 dark:bg-midnight-900 focus:bg-white dark:focus:bg-midnight-800 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all dark:text-white">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-2">
+                            <input type="checkbox" id="terms"
+                                class="mt-1 rounded text-primary-500 focus:ring-primary-500 bg-gray-50 dark:bg-midnight-900 border-gray-300 dark:border-midnight-600">
+                            <label for="terms" class="text-xs text-gray-500 dark:text-gray-400">
+                                I agree to the <a href="#"
+                                    class="text-primary-600 hover:text-primary-500 underline">Terms of Service</a> and
+                                <a href="#" class="text-primary-600 hover:text-primary-500 underline">Privacy
+                                    Policy</a>.
+                            </label>
+                        </div>
+
+                        <button type="submit"
+                            class="w-full py-3 rounded-xl bg-focus-gradient text-white font-bold shadow-lg shadow-primary-500/30 hover:opacity-90 active:scale-95 transition-all">
+                            Create Account
+                        </button>
+                    </form>
+
+                    <!-- Social Login -->
+                    <div class="mt-8 relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-200 dark:border-midnight-600"></div>
+                        </div>
+                        <div class="relative flex justify-center text-xs">
+                            <span class="px-2 bg-white dark:bg-midnight-800 text-gray-400">Or continue with</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 grid grid-cols-2 gap-3">
+                        <button
+                            class="flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-midnight-600 rounded-xl hover:bg-gray-50 dark:hover:bg-midnight-700 transition-colors bg-white dark:bg-midnight-800">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24">
+                                <path
+                                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                    fill="#4285F4" />
+                                <path
+                                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                    fill="#34A853" />
+                                <path
+                                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                                    fill="#FBBC05" />
+                                <path
+                                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                                    fill="#EA4335" />
+                            </svg>
+                            <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Google</span>
+                        </button>
+                        <button
+                            class="flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-midnight-600 rounded-xl hover:bg-gray-50 dark:hover:bg-midnight-700 transition-colors bg-white dark:bg-midnight-800">
+                            <i data-lucide="github" class="w-5 h-5 text-gray-800 dark:text-white"></i>
+                            <span class="text-sm font-medium text-gray-600 dark:text-gray-300">GitHub</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Footer (Consistent) -->
+        <footer id="main-footer"
+            class="bg-white dark:bg-midnight-800 border-t border-primary-100 dark:border-midnight-700 mt-auto">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                    <div class="col-span-1 md:col-span-1">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="bg-focus-gradient p-1.5 rounded-lg shadow-sm">
+                                <i data-lucide="brain-circuit" class="text-white w-5 h-5"></i>
+                            </div>
+                            <span
+                                class="font-bold text-xl tracking-tight text-slate-900 dark:text-white">StudyFlow</span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">Your intelligent AI
+                            study companion tailored for campus success. Built with Google Cloud & Gemini.</p>
+                        <div class="flex gap-4">
+                            <a href="#" class="text-slate-400 hover:text-primary-500 transition-colors"><i
+                                    data-lucide="twitter" class="w-5 h-5"></i></a>
+                            <a href="#" class="text-slate-400 hover:text-primary-500 transition-colors"><i
+                                    data-lucide="github" class="w-5 h-5"></i></a>
+                            <a href="#" class="text-slate-400 hover:text-primary-500 transition-colors"><i
+                                    data-lucide="linkedin" class="w-5 h-5"></i></a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-slate-900 dark:text-white mb-4">Product</h4>
+                        <ul class="space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Features</a>
+                            </li>
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Pricing</a>
+                            </li>
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">API
+                                    Docs</a></li>
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Integrations</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-slate-900 dark:text-white mb-4">Resources</h4>
+                        <ul class="space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Study
+                                    Guides</a></li>
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Student
+                                    Blog</a></li>
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Community</a>
+                            </li>
+                            <li><a href="#"
+                                    class="footer-link hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Help
+                                    Center</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-slate-900 dark:text-white mb-4">Newsletter</h4>
+                        <form class="flex gap-2">
+                            <input type="email" placeholder="Email address"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-midnight-600 bg-slate-50 dark:bg-midnight-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white">
+                            <button type="submit"
+                                class="bg-primary-500 hover:bg-primary-600 text-white p-2 rounded-lg transition-colors shadow-md">
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div
+                    class="border-t border-slate-100 dark:border-midnight-700 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p class="text-xs text-slate-400 dark:text-slate-500">© 2024 StudyFlow AI. All rights reserved.</p>
+                    <div class="flex gap-6 text-xs text-slate-500 dark:text-slate-400">
+                        <a href="#" class="hover:text-primary-600 dark:hover:text-primary-400">Privacy Policy</a>
+                        <a href="#" class="hover:text-primary-600 dark:hover:text-primary-400">Terms of Service</a>
+                        <a href="#" class="hover:text-primary-600 dark:hover:text-primary-400">Cookie Settings</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // Helper function to get CSRF token from cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+
+        // Theme Toggle Logic
+        const theme = {
+            toggle: () => {
+                const html = document.documentElement;
+                const btn = document.getElementById('theme-toggle-btn');
+                const isDark = html.classList.contains('dark');
+
+                if (isDark) {
+                    html.classList.remove('dark');
+                    localStorage.theme = 'light';
+                    btn.innerHTML = `<i data-lucide="moon" class="w-5 h-5"></i>`;
+                } else {
+                    html.classList.add('dark');
+                    localStorage.theme = 'dark';
+                    btn.innerHTML = `<i data-lucide="sun" class="w-5 h-5"></i>`;
+                }
+
+                lucide.createIcons();
+            },
+            init: () => {
+                const btn = document.getElementById('theme-toggle-btn');
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                    if (btn) btn.innerHTML = `<i data-lucide="sun" class="w-5 h-5"></i>`;
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    if (btn) btn.innerHTML = `<i data-lucide="moon" class="w-5 h-5"></i>`;
+                }
+            }
+        };
+
+        // Initialize theme
+        theme.init();
+
+        function switchTab(tab) {
+            const loginForm = document.getElementById('form-login');
+            const registerForm = document.getElementById('form-register');
+            const loginTab = document.getElementById('tab-login');
+            const registerTab = document.getElementById('tab-register');
+            const container = document.getElementById('container');
+            if (tab === 'login') {
+                container.classList.remove('margin-15');
+                container.classList.add('margin-10');
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+
+                loginTab.classList.add('text-primary-600', 'border-b-2', 'border-primary-500');
+                loginTab.classList.remove('text-gray-500', 'border-transparent');
+
+                registerTab.classList.remove('text-primary-600', 'border-b-2', 'border-primary-500');
+                registerTab.classList.add('text-gray-500', 'border-transparent');
+            } else {
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+                container.classList.remove('margin-10');
+                container.classList.add('margin-15');
+
+                registerTab.classList.add('text-primary-600', 'border-b-2', 'border-primary-500');
+                registerTab.classList.remove('text-gray-500', 'border-transparent');
+
+                loginTab.classList.remove('text-primary-600', 'border-b-2', 'border-primary-500');
+                loginTab.classList.add('text-gray-500', 'border-transparent');
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+
+            try {
+                // Get form values
+                const emailInput = form.querySelector('input[type="email"]');
+                const passwordInput = form.querySelector('input[type="password"]');
+
+                const email = emailInput?.value.trim();
+                const password = passwordInput?.value;
+
+                // ✅ Client-side validation
+                if (!email) {
+                    alert('Please enter your email');
+                    emailInput?.focus();
+                    return;
+                }
+
+                if (!password) {
+                    alert('Please enter your password');
+                    passwordInput?.focus();
+                    return;
+                }
+
+                if (!email.includes('@')) {
+                    alert('Please enter a valid email address');
+                    emailInput?.focus();
+                    return;
+                }
+
+                // Show loading state
+                btn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
+                btn.disabled = true;
+
+                // Send login request
+                const response = await fetch('/api/login/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    window.location.href = '/';
+                } else {
+                    console.error('Login error:', data.message);
+                    alert('Login failed: ' + (data.message || 'Unknown error'));
+
+                    // Reset button
+                    btn.innerHTML = '<span>Log In</span><i data-lucide="arrow-right" class="w-4 h-4"></i>';
+                    btn.disabled = false;
+                    lucide.createIcons();
+
+                    // Clear password for security
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('An error occurred: ' + error.message);
+
+                btn.innerHTML = '<span>Log In</span><i data-lucide="arrow-right" class="w-4 h-4"></i>';
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        }
+
+
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+
+            try {
+                // Get all input fields
+                const inputs = form.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]');
+
+                const firstNameInput = inputs[0];
+                const lastNameInput = inputs[1];
+                const emailInput = inputs[2];
+                const universityInput = inputs[3];
+                const passwordInput = inputs[4];
+                const passwordConfirmInput = inputs[5];
+
+                const firstName = firstNameInput?.value.trim();
+                const lastName = lastNameInput?.value.trim();
+                const email = emailInput?.value.trim();
+                const university = universityInput?.value.trim();
+                const password = passwordInput?.value;
+                const passwordConfirm = passwordConfirmInput?.value;
+
+                // ✅ Client-side validation - First Name
+                if (!firstName) {
+                    alert('Please enter your first name');
+                    firstNameInput?.focus();
+                    return;
+                }
+
+                // ✅ Last Name
+                if (!lastName) {
+                    alert('Please enter your last name');
+                    lastNameInput?.focus();
+                    return;
+                }
+
+                // ✅ Email
+                if (!email) {
+                    alert('Please enter your email');
+                    emailInput?.focus();
+                    return;
+                }
+
+                if (!email.includes('@')) {
+                    alert('Please enter a valid email address');
+                    emailInput?.focus();
+                    return;
+                }
+
+                // ✅ University
+                if (!university) {
+                    alert('Please enter your university name');
+                    universityInput?.focus();
+                    return;
+                }
+
+                // ✅ Password
+                if (!password) {
+                    alert('Please enter a password');
+                    passwordInput?.focus();
+                    return;
+                }
+
+                if (password.length < 8) {
+                    alert('Password must be at least 8 characters long');
+                    passwordInput?.focus();
+                    return;
+                }
+
+                // ✅ Password Confirm
+                if (!passwordConfirm) {
+                    alert('Please confirm your password');
+                    passwordConfirmInput?.focus();
+                    return;
+                }
+
+                if (password !== passwordConfirm) {
+                    alert('Passwords do not match');
+                    passwordConfirmInput?.focus();
+                    passwordConfirmInput.value = '';
+                    return;
+                }
+
+                // All validation passed - show loading
+                btn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
+                btn.disabled = true;
+
+                // Send registration request
+                const response = await fetch('/api/register/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        password: password,
+                        password_confirm: passwordConfirm,
+                        university: university
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    window.location.href = '/';
+                } else {
+                    console.error('Registration error:', data.message);
+                    alert('Registration failed: ' + (data.message || 'Unknown error'));
+
+                    // Reset button
+                    btn.innerHTML = 'Create Account';
+                    btn.disabled = false;
+
+                    // Clear passwords for security
+                    passwordInput.value = '';
+                    passwordConfirmInput.value = '';
+                    passwordInput.focus();
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert('An error occurred: ' + error.message);
+
+                btn.innerHTML = 'Create Account';
+                btn.disabled = false;
+            }
+        }
+
+
+
+    </script>
+</body>
+
+</html>
