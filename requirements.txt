@@ -1,0 +1,8 @@
+# Web Framework
+django>=5.1
+
+# Google Generative AI (Gemini SDK)
+google-generativeai>=0.8
+
+# Environment variables management (Best practice for API keys)
+python-dotenv>=1.0
