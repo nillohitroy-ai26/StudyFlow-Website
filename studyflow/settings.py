@@ -28,9 +28,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-eht#v38q&l&5drtf_q4vb=_)039my=xz0x*5qpbzt*juu26i%l'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['studyflow-6ppn.onrender.com']
 
 
 # Application definition
