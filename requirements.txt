@@ -8,3 +8,5 @@ google-generativeai>=0.8.5
 python-dotenv>=1.2.1
 
 pillow>=12.0.0
+psycopg2-binary
+dj-database-url
