@@ -32,6 +32,9 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['studyflow-6ppn.onrender.com']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://studyflow-6ppn.onrender.com',
+]
 
 # Application definition
 
