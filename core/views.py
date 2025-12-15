@@ -32,6 +32,7 @@ def register_login_page(request):
         return redirect('/')
     return render(request, 'register.html')
 
+@method_decorator(csrf_exempt, name='dispatch')
 class RegisterView(View):
     """Handle user registration"""
     def post(self, request):
@@ -93,7 +94,9 @@ class RegisterView(View):
         except Exception as e:
             print(f"Registration error: {str(e)}")
             return error(str(e), 500)
+        
 
+@method_decorator(csrf_exempt, name='dispatch')
 class LoginView(View):
     def post(self, request):
         try:
