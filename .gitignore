@@ -4,5 +4,6 @@ StudyFlow
 /study-companion
 /media
 /core/__pycache__
-/core/migrations
+/core/migrations/__pycache__
 /studyflow/__pycache__
+db.sqlite3
