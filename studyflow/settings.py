@@ -35,6 +35,8 @@ ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
     'https://studyflow-6ppn.onrender.com',
 ]
+SECURE_CSRF_COOKIE_SAMESITE = 'Lax'  # Better for mobile
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 # Application definition
 
