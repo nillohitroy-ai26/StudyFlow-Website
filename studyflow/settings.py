@@ -31,7 +31,7 @@ SECRET_KEY = 'django-insecure-eht#v38q&l&5drtf_q4vb=_)039my=xz0x*5qpbzt*juu26i%l
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['studyflow-6ppn.onrender.com']
+ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = [
     'https://studyflow-6ppn.onrender.com',
@@ -86,12 +86,9 @@ WSGI_APPLICATION = 'studyflow.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'StudyFlow'
+        'NAME': BASE_DIR / "db.sqlite3",
     }
 }
-
-if 'DATABASE_URL' in os.environ:
-    DATABASES['default'] = dj_database_url.parse(os.environ['DATABASE_URL'], conn_max_age=600)
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
