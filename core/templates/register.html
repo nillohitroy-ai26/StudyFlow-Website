@@ -38,12 +38,29 @@
         }
     </script>
     <style>
-        .margin-10 {
-            margin: 10rem;
+        @media screen and (min-width: 1024px) {
+
+            .margin-10 {
+                margin: 10rem;
+            }
+
+            .margin-15 {
+                margin: 15rem;
+            }
         }
 
-        .margin-15 {
-            margin: 15rem;
+        @media screen and (max-width: 425px) {
+            #container {
+                padding-top: 30rem;
+                padding-bottom: 30rem;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            #container {
+                padding-top: 30rem;
+                padding-bottom: 30rem;
+            }
         }
 
         .custom-scrollbar::-webkit-scrollbar {
@@ -151,7 +168,7 @@
     <main class="flex-1 overflow-y-auto custom-scrollbar relative flex flex-col">
 
         <!-- View Container -->
-        <div class="flex-1 flex items-center justify-center margin-10 px-4 py-12 min-h-[calc(100vh-8rem)]"
+        <div class="flex-1 flex items-center justify-center margin-10 px-4 py-8 sm:py-12 min-h-[calc(100vh-8rem)]"
             id="container"> <!-- Added padding for smaller screens -->
 
             <div
@@ -505,7 +522,6 @@
 
         async function handleLogin(e) {
             e.preventDefault();
-            const csrftoken = getCookie('csrftoken');
             const form = e.target;
             const btn = form.querySelector('button[type="submit"]');
 
@@ -545,10 +561,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrftoken,
-                        'Referer': window.location.origin
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
                     },
-                    credentials: 'include',
                     body: JSON.stringify({
                         email: email,
                         password: password
@@ -587,7 +601,6 @@
         async function handleRegister(e) {
             e.preventDefault();
             const form = e.target;
-            const csrftoken = getCookie('csrftoken');
             const btn = form.querySelector('button[type="submit"]');
 
             try {
@@ -678,10 +691,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrftoken,
-                        'Referer': window.location.origin
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken')
                     },
-                    credentials: 'include',
                     body: JSON.stringify({
                         first_name: firstName,
                         last_name: lastName,
